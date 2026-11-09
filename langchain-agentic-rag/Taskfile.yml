@@ -1,0 +1,60 @@
+# https://taskfile.dev · `task` lista las tareas · requiere: uv (Python) y, para Docker, docker compose.
+# Las tareas que reciben una pregunta la toman de lo que escribas después de `--`:
+#   task trace -- "Olvidé mi contraseña y estoy en casa: ¿cómo la restablezco?"
+version: "3"
+
+vars:
+  QUESTION: '{{default "¿Cada cuánto vence mi contraseña?" .CLI_ARGS}}'
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  install:
+    desc: Instala las dependencias de Python (incluidas las de pruebas)
+    cmds:
+      - uv sync
+
+  ask:
+    desc: 'Pregunta al agente (task ask -- "pregunta")'
+    cmds:
+      - uv run python main.py "{{.QUESTION}}"
+
+  trace:
+    desc: 'Pregunta y muestra las herramientas que pidió el agente (task trace -- "pregunta")'
+    cmds:
+      - uv run python main.py --trace "{{.QUESTION}}"
+
+  chat:
+    desc: Conversación con memoria de corto plazo (preguntas de seguimiento)
+    interactive: true
+    cmds:
+      - uv run python main.py --chat --trace
+
+  test:
+    desc: Pruebas sin red (modelo guionado y embeddings falsos)
+    cmds:
+      - uv run pytest -q
+
+  docker:build:
+    desc: Construye la imagen
+    cmds:
+      - docker compose build
+
+  docker:ask:
+    desc: 'El agente en un contenedor, con tu .env (task docker:ask -- "pregunta")'
+    cmds:
+      - docker compose run --rm agent --trace "{{.QUESTION}}"
+
+  docker:chat:
+    desc: Conversación con memoria, en un contenedor
+    interactive: true
+    cmds:
+      - docker compose run --rm agent --chat --trace
+
+  docker:ask:host:
+    desc: "Como docker:ask, pero en la red del anfitrión (solo Linux): alcanza LM Studio en localhost"
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent --trace "{{.QUESTION}}"

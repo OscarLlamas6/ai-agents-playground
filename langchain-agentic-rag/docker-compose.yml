@@ -1,0 +1,20 @@
+# langchain-agentic-rag: el agente como contenedor de un solo uso (no es un servidor).
+#
+#   docker compose run --rm agent --trace "¿Cada cuánto vence mi contraseña?"
+#   docker compose run --rm agent --chat --trace          # conversación con memoria (necesita la terminal: tty)
+name: langchain-agentic-rag
+
+services:
+  agent:
+    build: .
+    stdin_open: true                          # para el modo --chat
+    tty: true
+    env_file:                                 # ambos son opcionales; el de esta carpeta gana sobre el de la raíz del repositorio
+      - path: ../.env
+        required: false
+      - path: .env
+        required: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # para llegar a LM Studio, que corre en tu máquina
+    volumes:
+      - ./data:/app/data:ro                   # editar el manual sin reconstruir la imagen

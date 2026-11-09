@@ -1,0 +1,65 @@
+# https://taskfile.dev · `task` lista las tareas · requiere: uv (Python) y, para Docker, docker compose.
+# Las tareas que reciben una pregunta la toman de lo que escribas después de `--`:
+#   task trace -- "¿Cómo está la wiki?"
+version: "3"
+
+vars:
+  QUESTION: '{{default "¿Cómo está la VPN?" .CLI_ARGS}}'
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  install:
+    desc: Instala las dependencias de Python
+    cmds:
+      - uv sync
+
+  run:
+    desc: 'Pregunta al agente (task run -- "pregunta")'
+    cmds:
+      - uv run python agent.py "{{.QUESTION}}"
+
+  trace:
+    desc: 'Pregunta y muestra la traza: 👤 🤖 🔧 (task trace -- "pregunta")'
+    cmds:
+      - uv run python agent.py --trace "{{.QUESTION}}"
+
+  manual:
+    desc: El mismo bucle escrito a mano, sin create_agent
+    cmds:
+      - uv run python manual_loop.py "{{.QUESTION}}"
+
+  fake:
+    desc: Con el modelo de juguete (sin API ni LM Studio, US$ 0)
+    env:
+      LLM_PROVIDER: fake
+    cmds:
+      - uv run python agent.py --trace "{{.QUESTION}}"
+
+  docker:build:
+    desc: Construye la imagen
+    cmds:
+      - docker compose build
+
+  docker:run:
+    desc: 'El agente en un contenedor, con tu .env (task docker:run -- "pregunta")'
+    cmds:
+      - docker compose run --rm agent --trace "{{.QUESTION}}"
+
+  docker:fake:
+    desc: En un contenedor con el modelo de juguete (sin nada externo)
+    cmds:
+      - docker compose run --rm -e LLM_PROVIDER=fake agent --trace "{{.QUESTION}}"
+
+  docker:run:host:
+    desc: "Como docker:run, pero en la red del anfitrión (solo Linux): alcanza LM Studio en localhost"
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent --trace "{{.QUESTION}}"
+
+  docker:manual:
+    desc: El bucle escrito a mano, en un contenedor
+    cmds:
+      - docker compose run --rm --entrypoint python agent manual_loop.py "{{.QUESTION}}"

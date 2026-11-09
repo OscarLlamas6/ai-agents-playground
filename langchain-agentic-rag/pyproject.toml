@@ -1,0 +1,26 @@
+[project]
+name = "langchain-agentic-rag"
+version = "0.1.0"
+description = "RAG agéntico con LangChain: la búsqueda es una herramienta y el modelo decide cuándo usarla"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "langchain>=1.4",
+    "langchain-anthropic>=1.0",
+    "langchain-openai>=1.0",
+    "langgraph>=1.0",
+    "numpy>=2.0",
+    "openai>=1.0",
+    "pydantic>=2.8",
+    "python-dotenv>=1.0",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

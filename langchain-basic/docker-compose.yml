@@ -1,0 +1,17 @@
+# langchain-basic: el agente como contenedor de un solo uso (no es un servidor).
+#
+#   docker compose run --rm agent --trace "¿Cómo está la VPN?"
+#   docker compose run --rm -e LLM_PROVIDER=fake agent --trace "¿Cómo está la VPN?"        # sin modelo ni red
+#   docker compose run --rm --entrypoint python agent manual_loop.py "¿Cómo está la VPN?"  # el bucle escrito a mano
+name: langchain-basic
+
+services:
+  agent:
+    build: .
+    env_file:                                 # ambos son opcionales; el de esta carpeta gana sobre el de la raíz del repositorio
+      - path: ../.env
+        required: false
+      - path: .env
+        required: false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # para llegar a LM Studio, que corre en tu máquina
