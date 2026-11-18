@@ -74,6 +74,16 @@ tasks:
     cmds:
       - docker compose build
 
+  docker:up:
+    desc: Levanta el contenedor con la API y la interfaz (requiere docker compose)
+    cmds:
+      - docker compose up -d
+
+  docker:ps:
+    desc: Muestra los contenedores en ejecución
+    cmds:
+      - docker compose ps
+
   docker:ask:
     desc: 'El agente en un contenedor, con tu .env (task docker:ask -- "pregunta")'
     cmds:
