@@ -1,0 +1,28 @@
+meta {
+  name: 04 · Historial de la sesión
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/sessions/{{session_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq completed
+}
+
+tests {
+  test("el historial tiene los dos turnos", function () {
+    const roles = res.body.messages.map(m => m.role);
+    expect(roles.filter(r => r === "human")).to.have.lengthOf(2);
+    expect(roles).to.include("tool");
+  });
+}
+
+docs {
+  Historial legible (humano, IA, herramienta). PRUEBA: reinicia la API (Ctrl+C y vuelve a arrancarla) y ejecuta esta petición otra vez: la sesión sigue ahí.
+}

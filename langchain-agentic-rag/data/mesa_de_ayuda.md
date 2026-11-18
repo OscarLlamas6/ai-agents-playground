@@ -37,3 +37,9 @@ Hay laptops de préstamo para viajes y capacitaciones, por un máximo de 15 día
 Si recibes un correo sospechoso, no abras enlaces ni adjuntos. Usa el botón Reportar phishing del cliente de correo o reenvíalo a seguridad@nimbus.example. Seguridad responde en un máximo de 4 horas hábiles.
 
 Si hiciste clic en un enlace sospechoso o escribiste tu contraseña en una página falsa, cambia tu contraseña de inmediato y avisa por el interno 4200, disponible las 24 horas.
+
+## Tickets y tiempos de atención
+
+Cada ticket tiene una prioridad y un tiempo máximo para dar la primera respuesta, contado en horas hábiles: crítica, 2 horas; alta, 4 horas; media, 8 horas; baja, 24 horas. El horario hábil es de lunes a viernes, de 8:00 a 17:00, hora de Guatemala; fuera de ese horario el reloj no avanza.
+
+Un ticket incumple el acuerdo de servicio (SLA) cuando pasa su plazo sin una primera respuesta de soporte. Los tickets que incumplen se escalan a la jefatura de la mesa de ayuda.

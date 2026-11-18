@@ -1,0 +1,36 @@
+meta {
+  name: 07 Memoria de largo plazo - guardar
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Uso Linux",
+    "user_id": "ana"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("usó la herramienta de memoria", function () {
+    expect(res.body.tools_used).to.include("remember_preference");
+  });
+}
+
+docs {
+  Paso 7. Una preferencia duradera: se guarda en el store por usuario, no en el historial de la sesión.
+}

@@ -1,0 +1,32 @@
+meta {
+  name: 07 · Escribir pide aprobación
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "Agrega una nota a Ana: 'Enviar la propuesta el lunes'",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq awaiting_approval
+  res.body.pending_action.tool: eq add_note
+}
+
+script:post-response {
+  bru.setVar("approval_session_id", res.body.session_id);
+}
+
+docs {
+  `add_note` ESCRIBE en el CRM: el agente se pausa y la API devuelve `awaiting_approval` con la acción propuesta. Aún no se escribió nada.
+}

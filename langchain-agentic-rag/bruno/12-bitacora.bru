@@ -1,0 +1,25 @@
+meta {
+  name: 12 Bitacora de consultas (tokens)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/log?limit=5
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("la bitacora trae tokens por pregunta", function () {
+    expect(res.body[0].input_tokens).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  Paso 12. La bitácora la escribe el CÓDIGO (middleware), no el modelo: tokens de entrada y salida de cada pregunta.
+}

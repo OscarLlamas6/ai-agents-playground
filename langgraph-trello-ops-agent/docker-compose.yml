@@ -1,0 +1,60 @@
+# langgraph-trello-ops-agent: la API (FastAPI), la interfaz (Streamlit) y el agente de línea de comandos (un solo uso).
+#
+#   docker compose up --build                 # API en http://localhost:8011/docs · interfaz en http://localhost:8511 (puertos cambiables con API_PORT y UI_PORT)
+#   docker compose run --rm agent --trace "Muestra mis tableros"
+#   docker compose run --rm agent --chat --trace          # conversación con memoria (necesita la terminal: tty)
+#
+# Las sesiones (SQLite) viven en el volumen `ops-data`: reinicia la API y continúa con el mismo session_id.
+# Si tu .env define LLM_PROVIDER=openai (de pago), la API lo usará; para simular, pon LLM_PROVIDER=fake en el .env de esta carpeta.
+name: langgraph-trello-ops-agent
+
+x-agent: &agent
+  build: .
+  env_file:                                   # ambos son opcionales; el de esta carpeta gana sobre el de la raíz del repositorio
+    - path: ../.env
+      required: false
+    - path: .env
+      required: false
+  extra_hosts:
+    - "host.docker.internal:host-gateway"     # para llegar a LM Studio, que corre en tu máquina
+  volumes:
+    - ./data:/app/data:ro                     # editar el runbook sin reconstruir la imagen
+    - ops-data:/app/.data                     # memoria persistente (checkpoints, preferencias y sesiones)
+
+services:
+  api:
+    <<: *agent
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8011"]
+    command: []
+    ports: ["${API_PORT:-8011}:8011"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8011/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ui:
+    <<: *agent
+    entrypoint: ["streamlit", "run", "ui.py", "--server.address", "0.0.0.0", "--server.port", "8511", "--server.headless", "true", "--browser.gatherUsageStats", "false"]
+    command: []
+    environment:
+      API_URL: http://api:8011                # la interfaz habla con la API por HTTP, nunca con el agente directamente
+    ports: ["${UI_PORT:-8511}:8511"]
+    volumes: []
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8511/_stcore/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  agent:                                      # el agente de línea de comandos (contenedor de un solo uso)
+    <<: *agent
+    stdin_open: true                          # para pedir la aprobación y para --chat
+    tty: true
+    profiles: ["cli"]                         # no arranca con `docker compose up`
+
+volumes:
+  ops-data:

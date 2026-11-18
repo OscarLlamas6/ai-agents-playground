@@ -1,0 +1,36 @@
+meta {
+  name: 09 Herramientas - ticket y SLA
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "¿El ticket T-101 ya venció su SLA y quién lo tiene?",
+    "user_id": "marta"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("combinó dos herramientas", function () {
+    expect(res.body.tools_used).to.eql(["get_ticket", "sla_deadline"]);
+  });
+}
+
+docs {
+  Paso 9. Herramientas de solo lectura: get_ticket + sla_deadline (horas hábiles calculadas en código).
+}

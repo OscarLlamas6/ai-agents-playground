@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "hubspot": {
+      "command": "uv",
+      "args": ["run", "--directory", "${CLAUDE_PROJECT_DIR:-.}", "python", "mcp_server.py"],
+      "env": { "HUBSPOT_MODE": "fake" }
+    }
+  }
+}

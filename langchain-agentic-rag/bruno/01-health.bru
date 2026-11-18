@@ -1,0 +1,21 @@
+meta {
+  name: 01 Health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ok
+  res.body.index_ready: eq true
+}
+
+docs {
+  Paso 1. ¿Está viva la API y el manual indexado? Si index_ready es false: uv run python cli.py ingest
+}

@@ -1,0 +1,22 @@
+meta {
+  name: 06 Historial de la otra sesión
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/sessions/{{session_b}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("no contiene la conversación de la sesión A", function () {
+    const humanos = res.body.messages.filter(m => m.role === "human").map(m => m.content);
+    expect(humanos).to.deep.equal(["Muéstrame las tarjetas"]);
+  });
+}

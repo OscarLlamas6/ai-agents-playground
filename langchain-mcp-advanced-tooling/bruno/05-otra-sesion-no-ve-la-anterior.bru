@@ -1,0 +1,32 @@
+meta {
+  name: 05 · Otra sesión no ve la anterior
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "¿De quién hablábamos?",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.session_id: neq {{session_id}}
+  res.body.answer: contains Todavía no hemos hablado
+}
+
+script:post-response {
+  bru.setVar("other_session_id", res.body.session_id);
+}
+
+docs {
+  Sin `session_id` se crea una sesión distinta: no comparte memoria con la primera.
+}

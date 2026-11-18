@@ -1,0 +1,28 @@
+meta {
+  name: 10 Rechazar la escritura
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/sessions/{{session_id}}/approve
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "approved": false,
+    "reason": "falta la revisión"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("rechazada: no se ejecutó nada y el agente lo acepta", function () {
+    expect(res.body.writes).to.deep.equal([{ tool: "move_card", status: "rejected" }]);
+  });
+}

@@ -1,0 +1,132 @@
+{
+  "id": "S12ServidorMcp00001",
+  "name": "S12 · 07 Servidor MCP de n8n (opcional)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## n8n como servidor MCP\nEl nodo **MCP Server Trigger** expone las herramientas conectadas a él por HTTP (streamable) en `/mcp/s12-mcp`. Autenticación: *Header Auth* (la misma credencial `S12 Token webhook`).\n\nCualquier cliente MCP puede usarlo: el nodo **MCP Client Tool** de otro workflow, o un agente de LangChain. Las herramientas son las mismas del agente de la mesa de ayuda.",
+        "height": 220,
+        "width": 560,
+        "color": 4
+      },
+      "id": "8d241c28-b13f-55ff-905e-515a930f75e6",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -60,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "headerAuth",
+        "path": "s12-mcp"
+      },
+      "id": "407cd181-f221-5f4a-9f3c-4e501c4269f7",
+      "name": "Servidor MCP",
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "1d2ad02a-905b-5068-8585-deab82758350",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "cred-s12-webhook",
+          "name": "S12 Token webhook"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Consulta el estado actual de un servicio de TI. Entrada: nombre del servicio en minúsculas (vpn, correo, erp, wiki).",
+        "language": "javaScript",
+        "jsCode": "const ESTADOS = {\n  vpn: 'degradado: 0 túneles activos, 38 intentos de conexión fallidos en 5 min',\n  correo: 'operativo con cola de 1200 mensajes',\n  erp: 'lento: 92% de CPU en erp-app-01',\n  wiki: 'operativo',\n};\nconst clave = String(query).toLowerCase().trim();\nreturn ESTADOS[clave] ?? ('sin datos para ' + clave);"
+      },
+      "id": "49eb130e-4da4-5ceb-ab75-37a26bb03394",
+      "name": "estado_servicio",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        -200,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Busca runbooks de TI por palabras clave del problema. Devuelve pasos y la acción sugerida.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "S12SubRunbooks0001",
+          "mode": "list",
+          "cachedResultName": "S12 · 04 Sub-workflow: buscar runbook"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "consulta": "={{ $fromAI('consulta', 'Palabras clave del problema para buscar el runbook', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "consulta",
+              "displayName": "consulta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "209136a6-e5e6-5a97-a0f1-d5b216286208",
+      "name": "buscar_runbook",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        100,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "estado_servicio": {
+      "ai_tool": [
+        [
+          {
+            "node": "Servidor MCP",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar_runbook": {
+      "ai_tool": [
+        [
+          {
+            "node": "Servidor MCP",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "38600fb2-401c-52d0-9273-04cd61a73ff1",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

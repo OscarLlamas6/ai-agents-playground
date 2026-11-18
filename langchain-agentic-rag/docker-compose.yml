@@ -1,20 +1,88 @@
-# langchain-agentic-rag: el agente como contenedor de un solo uso (no es un servidor).
+# langchain-agentic-rag: Postgres con pgvector + la API (FastAPI) + la interfaz (Streamlit) + la CLI como contenedor de un solo uso.
 #
-#   docker compose run --rm agent --trace "¿Cada cuánto vence mi contraseña?"
-#   docker compose run --rm agent --chat --trace          # conversación con memoria (necesita la terminal: tty)
+#   docker compose up -d                                     # db + api + ui  →  API en :8000 (docs en /docs), UI en :8501
+#   docker compose run --rm agent ingest                     # indexa el manual (la API también lo hace al arrancar: AUTO_INGEST=1)
+#   docker compose run --rm agent ask --trace "¿Cada cuánto vence mi contraseña?"
+#   docker compose run --rm agent chat --trace               # conversación con memoria (necesita la terminal: tty)
+#   docker compose run --rm agent log                        # bitácora de consultas y huecos del manual
+#   LLM_PROVIDER=fake EMBEDDINGS_PROVIDER=fake docker compose up -d     # todo sin llaves ni red
 name: langchain-agentic-rag
 
+x-agent-env: &agent-env
+  env_file:                                   # ambos son opcionales; el de esta carpeta gana sobre el de la raíz del repositorio
+    - path: ../.env
+      required: false
+    - path: .env
+      required: false
+  environment: &agent-vars
+    DATABASE_URL: postgresql://agent:agent@db:5432/agent       # dentro de la red de compose la base se llama "db"
+    LLM_PROVIDER: ${LLM_PROVIDER:-openai}                       # lo que escribas en la terminal gana sobre el .env
+    EMBEDDINGS_PROVIDER: ${EMBEDDINGS_PROVIDER:-openai}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"     # para llegar a LM Studio, que corre en tu máquina
+  depends_on:
+    db:
+      condition: service_healthy
+
 services:
-  agent:
-    build: .
-    stdin_open: true                          # para el modo --chat
-    tty: true
-    env_file:                                 # ambos son opcionales; el de esta carpeta gana sobre el de la raíz del repositorio
-      - path: ../.env
-        required: false
-      - path: .env
-        required: false
-    extra_hosts:
-      - "host.docker.internal:host-gateway"   # para llegar a LM Studio, que corre en tu máquina
+  db:
+    image: pgvector/pgvector:pg17               # Postgres 17 con la extensión pgvector ya instalada
+    environment:
+      POSTGRES_USER: agent
+      POSTGRES_PASSWORD: agent                  # solo para el laboratorio local; nunca en un servidor real
+      POSTGRES_DB: agent
+    ports:
+      - "127.0.0.1:5433:5432"                   # 5433 en tu máquina para no chocar con un Postgres local
     volumes:
-      - ./data:/app/data:ro                   # editar el manual sin reconstruir la imagen
+      - pgdata:/var/lib/postgresql/data         # los datos (vectores, bitácora y SESIONES) sobreviven a `docker compose down` (no a `down -v`)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:                                          # el agente como servicio HTTP
+    build: .
+    image: langchain-agentic-rag:latest        # las tres piezas comparten la misma imagen
+    <<: *agent-env
+    environment:
+      <<: *agent-vars
+      AUTO_INGEST: "1"                          # comodidad de la demo: indexa el manual al arrancar si hace falta
+    entrypoint: ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./data:/app/data:ro                     # editar el manual sin reconstruir la imagen
+      - apistate:/app/state                     # memoria de largo plazo (preferencias por usuario)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ui:                                           # la interfaz sencilla: un cliente más de la API
+    build: .
+    image: langchain-agentic-rag:latest        # las tres piezas comparten la misma imagen
+    entrypoint: ["streamlit", "run", "ui.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+    environment:
+      API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8501:8501"
+
+  agent:                                        # la CLI como contenedor de un solo uso (no es un servidor)
+    build: .
+    image: langchain-agentic-rag:latest        # las tres piezas comparten la misma imagen
+    <<: *agent-env
+    stdin_open: true                            # para el modo chat
+    tty: true
+    volumes:
+      - ./data:/app/data:ro
+      - apistate:/app/state
+    profiles: ["cli"]                           # no se levanta con `docker compose up`; se usa con `run`
+
+volumes:
+  pgdata:
+  apistate:

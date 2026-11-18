@@ -1,0 +1,43 @@
+meta {
+  name: 04 Chat - pregunta al manual (RAG)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "¿Cada cuánto vence mi contraseña?",
+    "session_id": "{{session_id}}",
+    "user_id": "marta"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.found: eq true
+}
+
+tests {
+  test("buscó en el manual y citó", function () {
+    expect(res.body.tools_used).to.include("search_manual");
+    expect(res.body.citations.length).to.be.greaterThan(0);
+    expect(res.body.problems.length).to.equal(0);
+  });
+  test("informa el uso de tokens", function () {
+    expect(res.body.usage.input_tokens).to.be.greaterThan(0);
+  });
+}
+
+docs {
+  Paso 4. Misma sesión, ahora una pregunta del manual: mira tools_used, citations y usage (tokens de ESTA pregunta).
+}

@@ -1,0 +1,45 @@
+meta {
+  name: 02 · Chat sesión nueva
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "Resume las notas de Luis.",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq completed
+  res.body.session_id: isString
+  res.body.answer: contains renovará el contrato
+}
+
+script:post-response {
+  bru.setVar("session_id", res.body.session_id);
+}
+
+tests {
+  test("la API devolvió un session_id (uuid)", function () {
+    expect(res.body.session_id).to.have.lengthOf(36);
+  });
+  test("usó las dos herramientas de lectura", function () {
+    expect(res.body.tools_used).to.eql(["search_contacts", "get_contact_notes"]);
+  });
+  test("reporta el uso", function () {
+    expect(res.body.usage.model_calls).to.equal(3);
+  });
+}
+
+docs {
+  No enviamos `session_id`: la API crea uno (es el `thread_id` del agente) y lo DEVUELVE. El script de abajo lo guarda en la variable `session_id` para las siguientes peticiones.
+}

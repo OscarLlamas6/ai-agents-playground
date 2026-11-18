@@ -1,0 +1,30 @@
+meta {
+  name: 09 Otra escritura (mover)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "Mueve la tarjeta \"Revisar respaldo semanal\" a \"Hecho\"",
+    "session_id": "{{session_id}}",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq awaiting_approval
+}
+
+tests {
+  test("propone mover la tarjeta", function () {
+    expect(res.body.pending_actions[0].tool).to.equal("move_card");
+  });
+}

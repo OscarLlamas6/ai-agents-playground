@@ -1,0 +1,78 @@
+{
+  "id": "S12SubRunbooks0001",
+  "name": "S12 · 04 Sub-workflow: buscar runbook",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Sub-workflow que también es una herramienta\nLo usa el agente con el nodo **Call n8n Workflow Tool** y el triaje en modo simulado con **Execute Workflow**. Entrada: `consulta` (texto). Salida: runbooks ficticios que coinciden.",
+        "height": 150,
+        "width": 520,
+        "color": 4
+      },
+      "id": "3cdaf917-790b-5365-8773-d739b63dfbb9",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "consulta",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "id": "26361b77-702b-5a86-bab4-92dbd8cc9c6a",
+      "name": "Cuando lo llaman",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const consulta = String($json.consulta ?? '').toLowerCase();\nconst RUNBOOKS = [\n  { id: 'RB-VPN-01', palabras: ['vpn', 'túnel', 'tunel', 'gateway', 'red'], titulo: 'VPN: gateway sin respuesta',\n    pasos: ['Verificar estado del servicio vpn-gw-01', 'Revisar túneles activos', 'Reiniciar el servicio del gateway (requiere aprobación)', 'Confirmar que los usuarios reconectan'],\n    accion_sugerida: { tipo: 'reiniciar_servicio', objetivo: 'vpn-gw-01' } },\n  { id: 'RB-MAIL-01', palabras: ['correo', 'mail', 'cola', 'outlook'], titulo: 'Correo: cola de mensajes atascada',\n    pasos: ['Revisar longitud de la cola en mail-relay-02', 'Identificar mensajes bloqueados', 'Reiniciar el relay si la cola supera el umbral'],\n    accion_sugerida: { tipo: 'reiniciar_servicio', objetivo: 'mail-relay-02' } },\n  { id: 'RB-ACC-01', palabras: ['contraseña', 'contrasena', 'cuenta', 'bloqueada', 'acceso', 'clave'], titulo: 'Acceso: cuenta bloqueada',\n    pasos: ['Verificar identidad por el canal oficial', 'Desbloquear la cuenta', 'Forzar cambio de contraseña en el próximo inicio'],\n    accion_sugerida: { tipo: 'restablecer_acceso', objetivo: 'cuenta del solicitante' } },\n  { id: 'RB-ERP-01', palabras: ['erp', 'facturación', 'facturacion', 'aplicación', 'aplicacion'], titulo: 'ERP: aplicación lenta o caída',\n    pasos: ['Revisar uso de CPU y conexiones a la base', 'Reiniciar el servicio de aplicación fuera de horario pico'],\n    accion_sugerida: { tipo: 'reiniciar_servicio', objetivo: 'erp-app-01' } },\n  { id: 'RB-GEN-01', palabras: [], titulo: 'Escalamiento general a guardia',\n    pasos: ['Reunir evidencia (hora, host, síntomas)', 'Escalar al ingeniero de guardia'],\n    accion_sugerida: { tipo: 'escalar_a_oncall', objetivo: 'guardia' } },\n];\nlet hits = RUNBOOKS.filter(r => r.palabras.some(p => consulta.includes(p)));\nif (hits.length === 0) hits = [RUNBOOKS[RUNBOOKS.length - 1]];\nreturn [{ json: { consulta, runbooks: hits.slice(0, 2).map(({ palabras, ...r }) => r) } }];"
+      },
+      "id": "c99ac18e-b3c6-5bbb-9079-156dcbd33080",
+      "name": "Buscar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        260,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Cuando lo llaman": {
+      "main": [
+        [
+          {
+            "node": "Buscar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "8699a67e-76c9-5e22-a2da-21528691bca7",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

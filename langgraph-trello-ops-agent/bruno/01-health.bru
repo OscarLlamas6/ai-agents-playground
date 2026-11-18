@@ -1,0 +1,20 @@
+meta {
+  name: 01 Salud de la API
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ok
+}
+
+docs {
+  Comprueba que la API está arriba y qué modelo y modo de Trello usa. sessions_survive_restart indica si el checkpointer es persistente.
+}

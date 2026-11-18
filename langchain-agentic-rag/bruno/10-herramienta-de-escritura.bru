@@ -1,0 +1,37 @@
+meta {
+  name: 10 Herramienta de escritura - report_gap
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "¿Dan soporte a impresoras 3D?",
+    "user_id": "luis"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.found: eq false
+}
+
+tests {
+  test("registró el hueco", function () {
+    expect(res.body.tools_used).to.include("report_gap");
+  });
+}
+
+docs {
+  Paso 10. El manual no lo cubre: el agente responde que no lo encuentra y ESCRIBE el hueco en Postgres.
+}

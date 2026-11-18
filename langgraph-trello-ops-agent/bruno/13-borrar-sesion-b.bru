@@ -1,0 +1,15 @@
+meta {
+  name: 13 Borrar la sesión B
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/sessions/{{session_b}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 204
+}

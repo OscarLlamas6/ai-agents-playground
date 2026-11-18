@@ -1,0 +1,8 @@
+{
+  "ticket_id": "TCK-1006",
+  "asunto": "Servidor sin servicio, no responde",
+  "descripcion": "Este ticket apunta a un host cuya consulta a la CMDB falla a propósito para mostrar reintentos y el error workflow.",
+  "host": "caida-simulada",
+  "solicitante": "usuario.ficticio06",
+  "canal": "api"
+}

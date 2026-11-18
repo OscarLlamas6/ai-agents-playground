@@ -1,0 +1,8 @@
+{
+  "ticket_id": "TCK-1003",
+  "asunto": "La wiki interna está lenta",
+  "descripcion": "Las páginas de la wiki tardan unos 20 segundos en cargar desde esta mañana, pero terminan abriendo.",
+  "host": "wiki-int-01",
+  "solicitante": "usuario.ficticio03",
+  "canal": "portal"
+}

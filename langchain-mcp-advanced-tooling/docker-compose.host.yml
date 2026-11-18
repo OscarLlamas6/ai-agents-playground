@@ -1,0 +1,18 @@
+# Linux: los tres servicios comparten la red de tu máquina (sin NAT); se hablan por localhost.
+# Uso:  docker compose -f docker-compose.yml -f docker-compose.host.yml up --build -d
+services:
+  mcp:
+    network_mode: host
+    ports: !reset []
+    environment: {MCP_HOST: 127.0.0.1}
+  api:
+    network_mode: host
+    ports: !reset []
+    environment: {MCP_URL: "http://127.0.0.1:8000/mcp"}
+  ui:
+    network_mode: host
+    ports: !reset []
+    environment: {API_URL: "http://127.0.0.1:8001"}
+    command: ["streamlit", "run", "ui.py", "--server.port", "8510", "--server.address", "127.0.0.1", "--server.headless", "true", "--browser.gatherUsageStats", "false"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8510/_stcore/health', timeout=3)"]

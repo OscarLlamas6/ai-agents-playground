@@ -1,0 +1,23 @@
+[project]
+name = "n8n-workflows"
+version = "0.1.0"
+description = "Laboratorio n8n: un agente de chat y un flujo de triaje de tickets con aprobación humana, importables por CLI"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "requests>=2.32",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["scripts"]
+testpaths = ["tests"]
+markers = [
+    "integration: necesita n8n corriendo en localhost:5678 con los workflows importados (task up && task setup)",
+]
+addopts = "-m 'not integration'"

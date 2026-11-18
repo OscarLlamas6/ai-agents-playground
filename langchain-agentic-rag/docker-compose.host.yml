@@ -1,6 +1,6 @@
 # Linux: el contenedor comparte la red de tu máquina. Así `localhost:1235` ES tu LM Studio aunque este solo escuche en
 # 127.0.0.1 (no hace falta activar «Serve on Local Network»).
-# Uso:  docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent --trace "¿Cada cuánto vence mi contraseña?"
+# Uso:  docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent ask --trace "¿Cada cuánto vence mi contraseña?"
 # No funciona en Docker Desktop (Mac/Windows): allí activa «Serve on Local Network» en LM Studio y usa el compose normal.
 services:
   agent:
@@ -8,3 +8,16 @@ services:
     extra_hosts: !reset []
     environment:
       RUNNING_IN_DOCKER: "0"        # con la red del anfitrión, `localhost` ya es correcto: no se traduce
+      DATABASE_URL: postgresql://agent:agent@localhost:5433/agent    # la base publica el 5433 en tu máquina
+  api:                                # la API también en la red del anfitrión, para que alcance LM Studio
+    network_mode: host
+    extra_hosts: !reset []
+    ports: !reset []
+    environment:
+      RUNNING_IN_DOCKER: "0"
+      DATABASE_URL: postgresql://agent:agent@localhost:5433/agent
+  ui:
+    environment:
+      API_URL: http://host.docker.internal:8000      # la API ya no está en la red de compose: se llega por el anfitrión
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

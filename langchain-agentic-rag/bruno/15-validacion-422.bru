@@ -1,0 +1,29 @@
+meta {
+  name: 15 Validacion devuelve 422
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": ""
+  }
+}
+
+assert {
+  res.status: eq 422
+}
+
+docs {
+  Paso 15. Un mensaje vacío no pasa la validación (Pydantic). Mira /docs para ver el contrato.
+}

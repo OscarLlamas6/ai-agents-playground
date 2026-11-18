@@ -1,0 +1,37 @@
+meta {
+  name: 07 Escritura: queda esperando aprobación
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "Crea una tarjeta \"Revisar alertas de disco\"",
+    "session_id": "{{session_id}}",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq awaiting_approval
+}
+
+tests {
+  test("el grafo se pausó con la acción propuesta y nada se escribió", function () {
+    expect(res.body.answer).to.equal(null);
+    expect(res.body.pending_actions).to.have.lengthOf(1);
+    expect(res.body.pending_actions[0].tool).to.equal("create_card");
+    expect(res.body.writes).to.have.lengthOf(0);
+  });
+}
+
+docs {
+  interrupt() pausó el grafo. status = awaiting_approval y pending_actions trae la herramienta y sus argumentos.
+}

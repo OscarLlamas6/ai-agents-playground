@@ -1,0 +1,31 @@
+[project]
+name = "langchain-mcp-advanced-tooling"
+version = "0.1.0"
+description = "Un servidor MCP propio (FastMCP) contra HubSpot CRM y un agente LangChain que lo consume, solo y junto a otro servidor"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "mcp==1.30.0",
+    "langchain-mcp-adapters==0.3.2",
+    "langchain>=1.5",
+    "langchain-anthropic>=1.0",
+    "langchain-openai>=1.0",
+    "langgraph>=1.0",
+    "httpx>=0.28",
+    "pydantic>=2.8",
+    "python-dotenv>=1.0",
+    "fastapi>=0.163.0",
+    "streamlit>=1.67.0",
+    "langgraph-checkpoint-sqlite>=3.1.3",
+    "aiosqlite>=0.22.1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

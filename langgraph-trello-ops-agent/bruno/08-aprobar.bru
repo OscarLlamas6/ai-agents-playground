@@ -1,0 +1,32 @@
+meta {
+  name: 08 Aprobar la escritura
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/sessions/{{session_id}}/approve
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "approved": true
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq completed
+}
+
+tests {
+  test("la tarjeta se creó", function () {
+    expect(res.body.writes).to.deep.equal([{ tool: "create_card", status: "ok" }]);
+  });
+}
+
+docs {
+  Reanuda el grafo con Command(resume=...).
+}

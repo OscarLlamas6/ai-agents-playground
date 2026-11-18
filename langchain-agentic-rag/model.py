@@ -17,11 +17,15 @@ def local_url() -> str:
 
 
 def build_model():
-    """Devuelve un modelo de chat de LangChain según LLM_PROVIDER (anthropic | openai | local).
+    """Devuelve un modelo de chat de LangChain según LLM_PROVIDER (anthropic | openai | local | fake).
 
     `init_chat_model` es la interfaz común de LangChain: el resto del código no sabe qué proveedor hay detrás.
     """
     provider = os.getenv("LLM_PROVIDER", "openai").lower()
+    if provider == "fake":
+        from fake_model import FakeAgentModel        # sin red ni llaves: para demos y pruebas
+
+        return FakeAgentModel()
     if provider == "local":
         # LM Studio habla el protocolo de OpenAI: se usa el proveedor "openai" apuntando a otra URL.
         return init_chat_model(
@@ -32,5 +36,5 @@ def build_model():
             temperature=0,
         )
     if provider not in DEFAULT_MODELS:
-        raise ValueError(f"LLM_PROVIDER debe ser anthropic, openai o local (recibido: {provider!r})")
+        raise ValueError(f"LLM_PROVIDER debe ser anthropic, openai, local o fake (recibido: {provider!r})")
     return init_chat_model(os.getenv("LLM_MODEL") or DEFAULT_MODELS[provider], model_provider=provider)

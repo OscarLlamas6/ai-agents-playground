@@ -1,0 +1,15 @@
+meta {
+  name: 11 · Borrar la sesión
+  type: http
+  seq: 11
+}
+
+delete {
+  url: {{baseUrl}}/sessions/{{session_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 204
+}

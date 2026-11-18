@@ -1,0 +1,25 @@
+meta {
+  name: 13 · Validación da 422
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": ""
+  }
+}
+
+assert {
+  res.status: eq 422
+}
+
+docs {
+  Un mensaje vacío no pasa la validación de Pydantic.
+}

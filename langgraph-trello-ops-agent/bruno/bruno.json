@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "Agente de operaciones de Trello (LangGraph)",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

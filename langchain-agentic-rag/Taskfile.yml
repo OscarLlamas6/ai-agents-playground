@@ -17,21 +17,52 @@ tasks:
     cmds:
       - uv sync
 
+  db:
+    desc: Levanta Postgres con pgvector (puerto 5433)
+    cmds:
+      - docker compose up -d db
+
+  log:
+    desc: Muestra la bitácora de consultas y los huecos del manual
+    cmds:
+      - uv run python cli.py log
+
+  ingest:
+    desc: Ingesta del manual en Postgres + pgvector (Click)
+    cmds:
+      - uv run python cli.py ingest
+
   ask:
     desc: 'Pregunta al agente (task ask -- "pregunta")'
     cmds:
-      - uv run python main.py "{{.QUESTION}}"
+      - uv run python cli.py ask "{{.QUESTION}}"
 
   trace:
     desc: 'Pregunta y muestra las herramientas que pidió el agente (task trace -- "pregunta")'
     cmds:
-      - uv run python main.py --trace "{{.QUESTION}}"
+      - uv run python cli.py ask --trace "{{.QUESTION}}"
 
   chat:
-    desc: Conversación con memoria de corto plazo (preguntas de seguimiento)
+    desc: Conversación con memoria (preguntas de seguimiento)
     interactive: true
     cmds:
-      - uv run python main.py --chat --trace
+      - uv run python cli.py chat --trace
+
+  api:
+    desc: La API HTTP (FastAPI) en http://localhost:8000 · documentación en /docs
+    cmds:
+      - uv run uvicorn api:app --reload
+
+  ui:
+    desc: La interfaz Streamlit en http://localhost:8501 (necesita la API corriendo)
+    cmds:
+      - uv run streamlit run ui.py
+
+  bruno:
+    desc: Corre la colección de Bruno contra la API (necesita la API corriendo y Node)
+    dir: bruno
+    cmds:
+      - npx --yes @usebruno/cli@latest run --env local
 
   test:
     desc: Pruebas sin red (modelo guionado y embeddings falsos)
@@ -46,15 +77,15 @@ tasks:
   docker:ask:
     desc: 'El agente en un contenedor, con tu .env (task docker:ask -- "pregunta")'
     cmds:
-      - docker compose run --rm agent --trace "{{.QUESTION}}"
+      - docker compose run --rm agent ask --trace "{{.QUESTION}}"
 
   docker:chat:
     desc: Conversación con memoria, en un contenedor
     interactive: true
     cmds:
-      - docker compose run --rm agent --chat --trace
+      - docker compose run --rm agent chat --trace
 
   docker:ask:host:
     desc: "Como docker:ask, pero en la red del anfitrión (solo Linux): alcanza LM Studio en localhost"
     cmds:
-      - docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent --trace "{{.QUESTION}}"
+      - docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent ask --trace "{{.QUESTION}}"

@@ -1,0 +1,21 @@
+meta {
+  name: 01 · Health
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/health
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq ok
+  res.body.tools: isArray
+}
+
+docs {
+  Estado de la API: modelo, modo de HubSpot y las herramientas MCP descubiertas. Si la base o el servidor MCP fallan, `status` es `degraded` y el resto responde 503.
+}

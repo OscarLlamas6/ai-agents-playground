@@ -1,0 +1,31 @@
+meta {
+  name: 08 Memoria de largo plazo - otra sesion
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "¿Qué sistema uso?",
+    "user_id": "ana"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.answer: contains Linux
+}
+
+docs {
+  Paso 8. SESIÓN NUEVA (no enviamos session_id) y el agente igual lo recuerda: la memoria de largo plazo es por usuario.
+}

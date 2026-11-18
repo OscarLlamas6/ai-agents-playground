@@ -1,0 +1,174 @@
+{
+  "id": "S12SubEnriquecer01",
+  "name": "S12 · 03 Sub-workflow: enriquecer ticket (CMDB)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Sub-workflow\nSe llama desde el triaje con un nodo **Execute Workflow**. Recibe el item completo (`passthrough`) y devuelve el mismo item con `activo`.\n\nLa llamada HTTP **reintenta 3 veces**; si la CMDB sigue caída, el error sube al workflow padre y dispara el **error workflow**.",
+        "height": 190,
+        "width": 520,
+        "color": 4
+      },
+      "id": "2638d9f5-d2cc-5167-84a6-dec4b0461570",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -140
+      ]
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "83de3643-229b-5557-899a-162d5382ee8d",
+      "name": "Cuando lo llaman",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "607976e8-8afb-5ef6-a7d0-db513837776b",
+              "leftValue": "={{ $json.ticket.host }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "60e4a5c8-5126-5e0b-b25b-551a4e1e9295",
+      "name": "¿Hay host?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.servicios_url }}/sim-cmdb",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "host",
+              "value": "={{ $json.ticket.host }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "id": "bad115df-e41f-5aca-80ec-b7ca2fadb680",
+      "name": "Consultar CMDB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1500
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Cuando lo llaman').first().json;\nconst a = $input.first().json;\nreturn [{ json: { ...base, activo: { host: a.host, servicio: a.servicio, criticidad: a.criticidad, ambiente: a.ambiente, equipo: a.equipo, usuarios: a.usuarios } } }];"
+      },
+      "id": "72824109-86b5-5852-8fe5-4dd5b6cd8c1d",
+      "name": "Unir activo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const base = $('Cuando lo llaman').first().json;\nreturn [{ json: { ...base, activo: null } }];"
+      },
+      "id": "29dcc5a0-0e17-5338-b2d3-091835189248",
+      "name": "Sin activo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        320
+      ]
+    }
+  ],
+  "connections": {
+    "Cuando lo llaman": {
+      "main": [
+        [
+          {
+            "node": "¿Hay host?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay host?": {
+      "main": [
+        [
+          {
+            "node": "Consultar CMDB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sin activo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar CMDB": {
+      "main": [
+        [
+          {
+            "node": "Unir activo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "37d1703f-983a-57d2-a0e9-a78f91cd78e4",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

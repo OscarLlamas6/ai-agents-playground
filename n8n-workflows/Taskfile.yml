@@ -1,0 +1,108 @@
+# https://taskfile.dev · `task` lista las tareas · requiere Docker (con compose) y, para los scripts, uv o Python 3.12.
+version: "3"
+
+vars:
+  TICKET: '{{default "data/tickets/01_critico_vpn.json" .CLI_ARGS}}'
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  install:
+    desc: Instala las dependencias de Python de los scripts (requests, pytest)
+    cmds:
+      - uv sync
+
+  env:
+    desc: Crea .env desde .env.example si no existe (cámbiale las claves)
+    cmds:
+      - test -f .env || cp .env.example .env
+
+  up:
+    desc: Levanta n8n en http://localhost:5678 (imagen fijada)
+    deps: [env]
+    cmds:
+      - docker compose up -d
+      - sh scripts/wait_ready.sh
+      - echo "n8n listo en http://localhost:5678"
+
+  up:host:
+    desc: "Como up, en la red del anfitrión (solo Linux): alcanza LM Studio en localhost"
+    deps: [env]
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.host.yml up -d
+      - sh scripts/wait_ready.sh
+
+  credentials:
+    desc: Crea las credenciales S12 dentro de n8n con los valores de .env (no imprime llaves)
+    cmds:
+      - uv run python scripts/seed_credentials.py
+
+  import:
+    desc: Importa los workflows con la CLI, publica los necesarios y reinicia n8n
+    cmds:
+      - sh scripts/import_workflows.sh
+
+  setup:
+    desc: Todo de una vez, tras `task up` (credenciales + workflows)
+    cmds:
+      - task: credentials
+      - task: import
+
+  send:
+    desc: 'Dispara el triaje con un ticket (task send -- data/tickets/02_alto_correo.json)'
+    cmds:
+      - uv run python scripts/n8n_client.py send {{.TICKET}}
+
+  approve:
+    desc: 'Aprueba la acción pendiente de un ticket (task approve -- TCK-1001)'
+    cmds:
+      - uv run python scripts/n8n_client.py approve {{.CLI_ARGS}}
+
+  log:
+    desc: Muestra la bitácora simulada (notificaciones, acciones, auditoría, errores)
+    cmds:
+      - uv run python scripts/n8n_client.py log
+
+  clear:
+    desc: Limpia la bitácora simulada
+    cmds:
+      - uv run python scripts/n8n_client.py clear
+
+  curl:
+    desc: 'Lo mismo que `send`, pero con curl puro (task curl -- data/tickets/01_critico_vpn.json)'
+    cmds:
+      - sh scripts/trigger_ticket.sh {{.TICKET}}
+
+  fake-llm:
+    desc: Servidor falso compatible con OpenAI (puerto 8765) para probar el modo `llm` sin modelo real ni costo
+    cmds:
+      - uv run python scripts/fake_openai.py --verbose
+
+  test:
+    desc: Pruebas sin red (estructura de los workflows, sin credenciales, datos de ejemplo)
+    cmds:
+      - uv run pytest
+
+  test:integration:
+    desc: Pruebas contra n8n corriendo (necesita `task up` y `task setup`)
+    cmds:
+      - uv run pytest -m integration
+
+  export:
+    desc: Exporta los workflows de n8n a ./export (para versionarlos en Git; sin credenciales)
+    cmds:
+      - docker compose exec -T n8n n8n export:workflow --all --separate --output=/tmp/export
+      - docker compose cp n8n:/tmp/export ./export
+
+  down:
+    desc: Detiene n8n (los datos quedan en el volumen)
+    cmds:
+      - docker compose down
+
+  reset:
+    desc: Detiene n8n y BORRA el volumen (base, credenciales, ejecuciones)
+    cmds:
+      - docker compose down -v

@@ -5,7 +5,10 @@ Repositorio con múltiples implementaciones de agente de AI, cada una en su carp
 | Carpeta | Qué muestra | Framework |
 | --- | --- | --- |
 | [`langchain-basic`](langchain-basic) | El agente más pequeño posible, con cada elemento numerado y visible: modelo, herramientas, prompt de sistema, agente, mensajes, bucle con límite, traza y salida. Incluye el mismo bucle escrito a mano | LangChain |
-| [`langchain-agentic-rag`](langchain-agentic-rag) | RAG agéntico: la búsqueda es una herramienta; el agente decide si buscar, con qué consulta y cuántas veces; respuesta estructurada con citas verificadas, middleware y memoria de corto plazo | LangChain |
+| [`langchain-agentic-rag`](langchain-agentic-rag) | RAG agéntico sobre Postgres + pgvector: la búsqueda es una herramienta (junto a tickets, equipos, plazos y una escritura en la base); expuesto con **FastAPI**, CLI con Click, interfaz Streamlit y colección Bruno; el agente decide si buscar, con qué consulta y cuántas veces; respuesta estructurada con citas verificadas, middleware y memoria de corto plazo | LangChain |
+| [`langchain-mcp-advanced-tooling`](langchain-mcp-advanced-tooling) | Un servidor MCP propio contra HubSpot CRM (lecturas y escritura, con tools, recurso y prompt) y un agente que lo usa, expuesto con **FastAPI** (sesiones persistentes, aprobación por API), interfaz Streamlit y colección Bruno | LangChain + MCP |
+| [`langgraph-trello-ops-agent`](langgraph-trello-ops-agent) | Un agente de operaciones sobre Trello construido con `StateGraph`: RAG, memoria de corto y largo plazo, aprobación humana antes de escribir y tope de pasos; expuesto con **FastAPI**, interfaz Streamlit y colección Bruno | LangGraph |
+| [`n8n-workflows`](n8n-workflows) | n8n con Docker: un agente y un flujo de triaje de tickets con aprobación, importables como JSON | n8n |
 
 > La carpeta de cada agente nueva se añade a esta tabla. Empieza por `langchain-basic`; `langchain-agentic-rag` añade RAG, salida estructurada, middleware y memoria.
 

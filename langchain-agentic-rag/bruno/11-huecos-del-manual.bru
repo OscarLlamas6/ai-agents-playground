@@ -1,0 +1,25 @@
+meta {
+  name: 11 Huecos del manual
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/gaps
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("aparece la pregunta de luis", function () {
+    expect(res.body.some((g) => g.user_id === "luis")).to.equal(true);
+  });
+}
+
+docs {
+  Paso 11. Lo que escribió la herramienta report_gap.
+}

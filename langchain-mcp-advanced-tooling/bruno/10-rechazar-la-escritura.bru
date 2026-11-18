@@ -1,0 +1,28 @@
+meta {
+  name: 10 · Rechazar la escritura
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/sessions/{{reject_session_id}}/approve
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "approved": false,
+    "reason": "Todavía no"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq completed
+  res.body.answer: contains Todavía no
+}
+
+docs {
+  El rechazo vuelve al agente como mensaje y la nota NO se escribe.
+}

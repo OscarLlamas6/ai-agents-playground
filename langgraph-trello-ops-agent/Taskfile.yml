@@ -1,0 +1,90 @@
+# https://taskfile.dev · `task` lista las tareas · requiere: uv (Python) y, para Docker, docker compose.
+# Lo que escribas después de `--` es el mensaje al agente:
+#   task trace -- 'Crea una tarjeta "Revisar alertas de disco"'
+version: "3"
+
+vars:
+  MESSAGE: '{{default "Muestra mis tableros" .CLI_ARGS}}'
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  install:
+    desc: Instala las dependencias de Python (incluidas las de pruebas y langgraph dev)
+    cmds:
+      - uv sync
+
+  ask:
+    desc: 'Habla con el agente; pregunta antes de escribir (task ask -- "mensaje")'
+    interactive: true
+    cmds:
+      - uv run python main.py "{{.MESSAGE}}"
+
+  trace:
+    desc: 'Como ask, mostrando nodos y herramientas del recorrido (task trace -- "mensaje")'
+    interactive: true
+    cmds:
+      - uv run python main.py --trace "{{.MESSAGE}}"
+
+  chat:
+    desc: Conversación con memoria; guarda todo en .data/ops.sqlite (sobrevive al reinicio)
+    interactive: true
+    cmds:
+      - uv run python main.py --chat --trace --db .data/ops.sqlite
+
+  api:
+    desc: API FastAPI en http://127.0.0.1:8011 (documentación en /docs); las sesiones persisten en .data/ops.sqlite
+    cmds:
+      - uv run uvicorn api:app --port 8011
+
+  ui:
+    desc: Interfaz Streamlit en http://localhost:8511 (necesita la API en marcha: task api)
+    cmds:
+      - API_URL=http://127.0.0.1:8011 uv run streamlit run ui.py --server.port 8511
+
+  bruno:
+    desc: Ejecuta la colección Bruno contra la API en marcha (CLI de Bruno vía npx; requiere Node.js y task api)
+    dir: bruno
+    cmds:
+      - npx --yes @usebruno/cli@4.3.0 run --env local
+
+  dev:
+    desc: Servidor de desarrollo de LangGraph + Studio (http://127.0.0.1:2024)
+    cmds:
+      - uv run langgraph dev
+
+  test:
+    desc: Pruebas sin red (modelo guionado y Trello simulado)
+    cmds:
+      - uv run pytest -q
+
+  docker:up:
+    desc: Levanta la API (:8011) y la interfaz (:8511) con healthchecks
+    cmds:
+      - docker compose up --build
+
+  docker:build:
+    desc: Construye la imagen
+    cmds:
+      - docker compose build
+
+  docker:ask:
+    desc: 'El agente en un contenedor (task docker:ask -- "mensaje")'
+    interactive: true
+    cmds:
+      - docker compose run --rm agent --trace "{{.MESSAGE}}"
+
+  docker:chat:
+    desc: Conversación con memoria persistente, en un contenedor
+    interactive: true
+    cmds:
+      - docker compose run --rm agent --chat --trace
+
+  docker:ask:host:
+    desc: "Como docker:ask, pero en la red del anfitrión (solo Linux): alcanza LM Studio en localhost"
+    interactive: true
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent --trace "{{.MESSAGE}}"

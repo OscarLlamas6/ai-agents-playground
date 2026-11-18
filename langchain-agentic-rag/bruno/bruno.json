@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "agente-rag-mesa-de-ayuda",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

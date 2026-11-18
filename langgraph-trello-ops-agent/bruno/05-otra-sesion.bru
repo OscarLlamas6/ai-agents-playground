@@ -1,0 +1,37 @@
+meta {
+  name: 05 Otra sesión (no ve la anterior)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "Muéstrame las tarjetas",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+script:post-response {
+  bru.setVar("session_b", res.body.session_id);
+}
+
+tests {
+  test("sesión distinta pero mismo usuario: recuerda su tablero por defecto", function () {
+    expect(res.body.session_id).to.not.equal(bru.getVar("session_id"));
+    expect(res.body.answer).to.include("Migrar base de datos de inventario");
+  });
+}
+
+docs {
+  Otro session_id = otra conversación (no ve los mensajes de la primera), pero el Store sí recuerda las preferencias del usuario.
+}

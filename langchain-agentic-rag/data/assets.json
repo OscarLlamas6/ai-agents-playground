@@ -1,0 +1,6 @@
+[
+  {"hostname": "LT-0017", "model": "Laptop Nimbus Pro 14", "assigned_to": "Ana Reyes", "location": "Piso 3", "purchase_date": "2024-02-15", "warranty_months": 36},
+  {"hostname": "LT-0042", "model": "Laptop Nimbus Air 13", "assigned_to": "Luis Barrios", "location": "Piso 5", "purchase_date": "2023-06-01", "warranty_months": 36},
+  {"hostname": "LT-0088", "model": "Laptop Nimbus Pro 16", "assigned_to": "Marta Solís", "location": "Piso 2", "purchase_date": "2021-09-20", "warranty_months": 36},
+  {"hostname": "PR-0003", "model": "Impresora Color X500", "assigned_to": "Piso 2", "location": "Piso 2", "purchase_date": "2022-01-10", "warranty_months": 24}
+]

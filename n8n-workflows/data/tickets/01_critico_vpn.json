@@ -1,0 +1,8 @@
+{
+  "ticket_id": "TCK-1001",
+  "asunto": "VPN caída para toda la sucursal Quetzaltenango",
+  "descripcion": "Desde las 7:40 nadie en la sucursal puede conectarse a la VPN. El cliente muestra 'gateway no responde'. Son unas 40 personas sin servicio y hoy hay cierre de mes.",
+  "host": "vpn-gw-01",
+  "solicitante": "usuario.ficticio01",
+  "canal": "portal"
+}

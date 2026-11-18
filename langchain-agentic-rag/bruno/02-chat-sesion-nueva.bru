@@ -1,0 +1,37 @@
+meta {
+  name: 02 Chat - sesion nueva
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "Me llamo Marta",
+    "user_id": "marta"
+  }
+}
+
+vars:post-response {
+  session_id: res.body.session_id
+}
+
+assert {
+  res.status: eq 200
+  res.body.session_id: isString
+  res.body.status: eq answered
+}
+
+docs {
+  Paso 2. NO enviamos session_id: el servidor crea uno y lo devuelve. El script lo guarda en la variable session_id.
+  session_id (API) = thread_id (LangGraph).
+}

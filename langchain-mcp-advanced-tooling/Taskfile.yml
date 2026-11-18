@@ -1,0 +1,86 @@
+# https://taskfile.dev · `task` lista las tareas · requiere: uv (Python) y, para Docker, docker compose.
+#   task ask -- "Resume las notas de Luis."
+version: "3"
+
+vars:
+  QUESTION: '{{default "Resume las notas de Luis." .CLI_ARGS}}'
+
+tasks:
+  default:
+    silent: true
+    cmds:
+      - task --list
+
+  install:
+    desc: Instala las dependencias de Python (incluidas las de pruebas)
+    cmds:
+      - uv sync
+
+  ask:
+    desc: 'Pregunta al agente (task ask -- "pregunta"); pide aprobación antes de escribir'
+    interactive: true
+    cmds:
+      - uv run python main.py --trace "{{.QUESTION}}"
+
+  ask:multi:
+    desc: 'El agente con DOS servidores MCP: HubSpot y el de hora (task ask:multi -- "¿Qué hora es en America/Guatemala?")'
+    cmds:
+      - uv run python main.py --multi --trace "{{.QUESTION}}"
+
+  api:
+    desc: La API del agente (FastAPI) en http://127.0.0.1:8001/docs
+    cmds:
+      - uv run uvicorn api:app --port 8001
+
+  ui:
+    desc: La interfaz Streamlit en http://127.0.0.1:8510 (necesita la API corriendo: task api)
+    env:
+      API_URL: http://127.0.0.1:8001
+    cmds:
+      - uv run streamlit run ui.py --server.port 8510
+
+  bruno:
+    desc: Ejecuta la colección Bruno contra la API (necesita la API corriendo; Node 18 o superior)
+    dir: bruno
+    cmds:
+      - npx @usebruno/cli run --env local
+
+  explore:
+    desc: Explora un servidor con el cliente mínimo (por defecto, el de referencia mcp-server-time)
+    cmds:
+      - uv run python mini_client.py {{.CLI_ARGS}}
+
+  test:
+    desc: Pruebas sin red (modelo guionado y HubSpot simulado)
+    cmds:
+      - uv run pytest -q
+
+  server:
+    desc: Servidor MCP por stdio (para el Inspector o un cliente)
+    cmds:
+      - uv run python mcp_server.py
+
+  server:http:
+    desc: Servidor MCP por HTTP en 127.0.0.1:8000/mcp
+    cmds:
+      - uv run python mcp_server.py --http
+
+  inspector:
+    desc: MCP Inspector sobre este servidor (necesita Node 22.23 o superior)
+    cmds:
+      - npx @modelcontextprotocol/inspector uv run python mcp_server.py
+
+  docker:build:
+    desc: Construye la imagen del servidor MCP
+    cmds:
+      - docker compose build
+
+  docker:up:
+    desc: Levanta servidor MCP, API y UI en contenedores (:8000, :8001, :8510)
+    cmds:
+      - docker compose up --build -d
+
+  docker:down:
+    desc: Detiene y elimina los contenedores (las sesiones quedan en el volumen)
+    cmds:
+      - docker compose down

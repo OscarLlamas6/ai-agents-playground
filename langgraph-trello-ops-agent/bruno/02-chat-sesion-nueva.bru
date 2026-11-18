@@ -1,0 +1,39 @@
+meta {
+  name: 02 Chat: sesión nueva
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "Muestra mis tableros",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq completed
+  res.body.session_id: isString
+}
+
+script:post-response {
+  bru.setVar("session_id", res.body.session_id);
+}
+
+tests {
+  test("la API crea y devuelve el session_id (el thread_id)", function () {
+    expect(res.body.session_id).to.have.lengthOf(36);
+    expect(res.body.tools_used).to.include("list_boards");
+  });
+}
+
+docs {
+  No enviamos session_id: la API crea uno (uuid) y lo devuelve. El script lo guarda en la variable {{session_id}}.
+}

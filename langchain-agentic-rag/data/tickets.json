@@ -1,0 +1,7 @@
+[
+  {"id": "T-101", "title": "No puedo entrar a la VPN desde México", "priority": "alta", "status": "abierto", "owner": "Marta Solís", "opened_at": "2026-11-09T09:30:00", "first_response_at": null},
+  {"id": "T-102", "title": "Impresora del piso 2 atasca el papel", "priority": "baja", "status": "en progreso", "owner": "Luis Barrios", "opened_at": "2026-11-10T14:10:00", "first_response_at": "2026-11-10T15:00:00"},
+  {"id": "T-103", "title": "Servidor de correo sin respuesta", "priority": "crítica", "status": "resuelto", "owner": "Marta Solís", "opened_at": "2026-11-11T08:15:00", "first_response_at": "2026-11-11T08:40:00"},
+  {"id": "T-104", "title": "Solicitud de laptop de préstamo para viaje", "priority": "media", "status": "abierto", "owner": "Ana Reyes", "opened_at": "2026-11-12T16:45:00", "first_response_at": null},
+  {"id": "T-105", "title": "Correo sospechoso reportado como phishing", "priority": "alta", "status": "abierto", "owner": "Seguridad", "opened_at": "2026-11-13T10:00:00", "first_response_at": "2026-11-13T11:30:00"}
+]

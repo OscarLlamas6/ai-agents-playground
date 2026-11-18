@@ -1,0 +1,19 @@
+meta {
+  name: 13 Borrar la sesion
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/sessions/{{session_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Paso 13. Se borra el hilo del checkpointer.
+}

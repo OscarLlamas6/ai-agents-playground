@@ -1,0 +1,35 @@
+meta {
+  name: 03 · Chat seguimiento misma sesión
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "¿Y sus notas?",
+    "session_id": "{{session_id}}",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.session_id: eq {{session_id}}
+}
+
+tests {
+  test("recordó de qué contacto hablábamos (no hay búsqueda)", function () {
+    expect(res.body.tools_used).to.eql(["get_contact_notes"]);
+    expect(res.body.answer).to.contain("renovará el contrato");
+  });
+}
+
+docs {
+  Mismo `session_id` = misma conversación. El mensaje no dice 'Luis': el agente lo recuerda porque el historial viene del checkpointer (SQLite).
+}

@@ -164,4 +164,4 @@ task docker:manual                             # el bucle a mano, en un contened
 
 ## Versiones probadas
 
-`langchain 1.4.9`, `langchain-core 1.7.6`, `langgraph 1.2.20`, `langchain-anthropic 1.7.10`, `langchain-openai 1.7.4`, Python 3.12. LangChain 1.x reemplazó interfaces antiguas (`AgentExecutor`, `initialize_agent`, `LLMChain`): si un tutorial las usa, es anterior a la versión actual; hoy se usa `create_agent`.
+`langchain 1.5.0`, `langchain-core 1.8.0`, `langgraph 1.2.22`, `langchain-anthropic 1.7.10`, `langchain-openai 1.8.0`, Python 3.12. LangChain 1.x reemplazó interfaces antiguas (`AgentExecutor`, `initialize_agent`, `LLMChain`): si un tutorial las usa, es anterior a la versión actual; hoy se usa `create_agent`.

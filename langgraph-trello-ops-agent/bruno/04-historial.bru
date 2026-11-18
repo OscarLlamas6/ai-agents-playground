@@ -1,0 +1,28 @@
+meta {
+  name: 04 Historial de la sesión
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/sessions/{{session_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq completed
+}
+
+tests {
+  test("el historial conserva los dos turnos", function () {
+    const humanos = res.body.messages.filter(m => m.role === "human").map(m => m.content);
+    expect(humanos).to.have.lengthOf(2);
+    expect(humanos[0]).to.equal("Muestra mis tableros");
+  });
+}
+
+docs {
+  El estado vive en el checkpointer, no en la API: GET /sessions/{id} lo lee de ahí.
+}

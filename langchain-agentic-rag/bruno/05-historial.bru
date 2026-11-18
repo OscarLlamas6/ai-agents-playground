@@ -1,0 +1,28 @@
+meta {
+  name: 05 Historial de la sesion
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/sessions/{{session_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("hay mensajes del usuario y del asistente", function () {
+    const roles = res.body.map((m) => m.role);
+    expect(roles).to.include("user");
+    expect(roles).to.include("assistant");
+    expect(roles).to.include("tool");
+  });
+}
+
+docs {
+  Paso 5. Lo que el servidor guardó de la conversación: preguntas, llamadas a herramientas y respuestas.
+}

@@ -1,6 +1,7 @@
-"""Mini-RAG en memoria: carga el manual, lo parte en fragmentos, los vectoriza y busca los más parecidos.
+"""Mini-RAG sobre Postgres + pgvector: parte el manual en fragmentos, los vectoriza, los guarda en la base y busca los más parecidos.
 
-Esto NO es el agente: es la pieza que el agente usará como herramienta (ver tools.py).
+Esto NO es el agente: es la pieza que el agente usará como herramienta (ver tools.py). Los vectores viven en la base
+(db.py), así que la ingesta se hace una vez y las búsquedas posteriores solo vectorizan la pregunta.
 """
 
 import hashlib
@@ -53,11 +54,37 @@ def _fake_embed(texts: list[str], dims: int = 256) -> np.ndarray:
 # ───────────────────────── Almacén ─────────────────────────
 
 
+class IndexNotReady(RuntimeError):
+    """El manual todavía no está indexado en la base: hay que ejecutar la ingesta."""
+
+
 class Retriever:
-    def __init__(self, path: str | Path):
+    """Lee el manual, lo parte en fragmentos y busca en la base. La INGESTA es un paso aparte: `ingest()` (o `cli.py ingest`)."""
+
+    def __init__(self, path: str | Path, db):
+        self.db = db
         self.chunks = self._split(Path(path).read_text(encoding="utf-8"))
-        self.vectors = embed([f"{c.section}. {c.text}" for c in self.chunks], "document")
+        self.by_id = {c.id: c for c in self.chunks}
         self.retrieved: dict[str, Chunk] = {}   # todo lo que el agente ha visto: sirve para verificar sus citas
+        self._texts = [f"{c.section}. {c.text}" for c in self.chunks]
+
+    @property
+    def fingerprint(self) -> str:
+        """Huella del manual + el modelo de embeddings: si cambia cualquiera de los dos, el índice guardado ya no sirve."""
+        parts = [os.getenv("EMBEDDINGS_PROVIDER", "openai"), os.getenv("EMBEDDINGS_MODEL", ""), *self._texts]
+        return hashlib.sha256("|".join(parts).encode()).hexdigest()
+
+    @property
+    def ready(self) -> bool:
+        return self.db.has_index(self.fingerprint)
+
+    def ingest(self, force: bool = False) -> dict:
+        """Ingesta: vectoriza los fragmentos y los guarda en la base. Sin `force`, no repite si el índice ya está al día."""
+        if self.ready and not force:
+            return {"chunks": len(self.chunks), "dims": None, "reindexed": False}
+        vectors = embed(self._texts, "document")
+        self.db.index_chunks(self.chunks, vectors, self.fingerprint)
+        return {"chunks": len(self.chunks), "dims": int(vectors.shape[1]), "reindexed": True}
 
     @staticmethod
     def _split(markdown: str) -> list[Chunk]:
@@ -76,7 +103,9 @@ class Retriever:
         return list(dict.fromkeys(c.section for c in self.chunks))
 
     def search(self, query: str, k: int = 3) -> list[tuple[Chunk, float]]:
-        scores = self.vectors @ embed([query], "query")[0]
-        best = [(self.chunks[i], float(scores[i])) for i in np.argsort(-scores)[:k]]
+        if not self.ready:
+            raise IndexNotReady("El manual no está indexado. Ejecuta primero: uv run python cli.py ingest")
+        hits = self.db.search(embed([query], "query")[0], k)
+        best = [(self.by_id[h.id], h.score) for h in hits]
         self.retrieved.update({c.id: c for c, _ in best})
         return best

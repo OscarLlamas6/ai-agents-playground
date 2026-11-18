@@ -1,0 +1,9 @@
+# Linux: n8n comparte la red de tu máquina. Así `localhost:1235` ES tu LM Studio aunque solo escuche en 127.0.0.1
+# (no hace falta activar «Serve on Local Network»). En la credencial `S12 OpenAI (o LM Studio)` usa http://localhost:1235/v1.
+# Uso:  docker compose -f docker-compose.yml -f docker-compose.host.yml up -d
+# No funciona en Docker Desktop (Mac/Windows): allí usa el compose normal y la URL http://host.docker.internal:1235/v1.
+services:
+  n8n:
+    network_mode: host
+    ports: !reset []
+    extra_hosts: !reset []

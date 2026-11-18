@@ -1,0 +1,19 @@
+meta {
+  name: 14 Sesion borrada devuelve 404
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/sessions/{{session_id}}
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 404
+}
+
+docs {
+  Paso 14. Un id que ya no existe responde 404.
+}

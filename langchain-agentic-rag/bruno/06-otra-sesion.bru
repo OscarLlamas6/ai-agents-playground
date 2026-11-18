@@ -1,0 +1,41 @@
+meta {
+  name: 06 Chat - otra sesion no recuerda
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "¿Cómo me llamo?",
+    "user_id": "marta"
+  }
+}
+
+vars:post-response {
+  otra_sesion: res.body.session_id
+}
+
+assert {
+  res.status: eq 200
+  res.body.answer: contains No me has dicho
+}
+
+tests {
+  test("es una sesion distinta", function () {
+    expect(res.body.session_id).to.not.equal(bru.getVar("session_id"));
+  });
+}
+
+docs {
+  Paso 6. Sin session_id nace otra conversación: el mismo usuario, pero sin el historial de la primera.
+}

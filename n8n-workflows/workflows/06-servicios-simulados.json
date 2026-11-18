@@ -1,0 +1,305 @@
+{
+  "id": "S12ServiciosSim001",
+  "name": "S12 · 06 Servicios simulados (CMDB y bitácora)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Servicios simulados\nHacen de 'sistemas externos' para el laboratorio:\n- `GET /webhook/sim-cmdb?host=` inventario ficticio\n- `POST /webhook/sim-registro` guarda notificaciones, acciones y auditoría\n- `GET /webhook/sim-registro` las lista\n- `DELETE /webhook/sim-registro` limpia\n\nSin autenticación: SOLO para localhost. En producción serían sistemas reales con credenciales.",
+        "height": 230,
+        "width": 420,
+        "color": 4
+      },
+      "id": "73764397-4126-5e9e-8dab-ecddb092c4d0",
+      "name": "Nota",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "sim-cmdb",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f7c7a9e8-9c6e-51e4-9a12-52f7d25b3930",
+      "name": "CMDB: GET",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "c1c49ea0-983a-57f6-a13b-3d391e6f7921"
+    },
+    {
+      "parameters": {
+        "jsCode": "const host = String($json.query?.host ?? '').toLowerCase();\nconst CMDB = {\n  'vpn-gw-01':    { servicio: 'vpn',      criticidad: 'alta',  ambiente: 'produccion', equipo: 'Redes',     usuarios: 450 },\n  'mail-relay-02':{ servicio: 'correo',   criticidad: 'media', ambiente: 'produccion', equipo: 'Mensajería', usuarios: 900 },\n  'erp-app-01':   { servicio: 'erp',      criticidad: 'alta',  ambiente: 'produccion', equipo: 'Aplicaciones', usuarios: 120 },\n  'wiki-int-01':  { servicio: 'wiki',     criticidad: 'baja',  ambiente: 'produccion', equipo: 'Aplicaciones', usuarios: 300 },\n  'impr-piso3':   { servicio: 'impresion',criticidad: 'baja',  ambiente: 'oficina',    equipo: 'Soporte',    usuarios: 25 },\n};\nif (host === 'caida-simulada') return [{ json: { status: 503, body: { error: 'CMDB no disponible (falla simulada)' } } }];\nconst activo = CMDB[host];\nif (!activo) return [{ json: { status: 404, body: { error: 'host no registrado', host } } }];\nreturn [{ json: { status: 200, body: { host, ...activo } } }];"
+      },
+      "id": "d2dee4ca-b3a9-5cb9-b315-7d0cee2addeb",
+      "name": "Buscar activo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "responseCode": "={{ $json.status }}"
+        }
+      },
+      "id": "4bf54936-10f7-59b9-a815-62d7f8c39e6c",
+      "name": "Responder CMDB",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        480,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "sim-registro",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d5c34cdc-1098-5beb-87ee-532c80fd6fc3",
+      "name": "Registro: POST",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        460
+      ],
+      "webhookId": "6a7cdb00-b656-5e42-aecb-cfd0bb41ec00"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nsd.registro = sd.registro ?? [];\nconst entrada = { n: (sd.contador = (sd.contador ?? 0) + 1), ts: new Date().toISOString(), ...($json.body ?? {}) };\nsd.registro.push(entrada);\nif (sd.registro.length > 200) sd.registro.splice(0, sd.registro.length - 200);   // límite: no crece sin tope\nreturn [{ json: { ok: true, n: entrada.n } }];"
+      },
+      "id": "4c1b6cc4-e669-596f-9102-5a19ed64b60b",
+      "name": "Guardar entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 201
+        }
+      },
+      "id": "55adceae-3c10-59b0-8c76-363e7f917c31",
+      "name": "Responder registro",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        480,
+        460
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "sim-registro",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4113200c-da62-5acb-b9ee-5e1893a1f7c8",
+      "name": "Registro: GET",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        720
+      ],
+      "webhookId": "e2816ff5-7150-5060-8106-9eaf6a5f2d99"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nconst q = $json.query ?? {};\nlet e = sd.registro ?? [];\nif (q.tipo) e = e.filter(x => x.tipo === q.tipo);\nif (q.ticket_id) e = e.filter(x => x.ticket_id === q.ticket_id);\nreturn [{ json: { total: e.length, entradas: e.slice(-50) } }];"
+      },
+      "id": "a593fee2-9cda-5fd1-8094-c777da1e5c64",
+      "name": "Listar entradas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "4e57864a-09c4-5c9b-b5eb-3e07a6dc5e1c",
+      "name": "Responder lista",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        480,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "DELETE",
+        "path": "sim-registro",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7ec3ccab-59a0-5597-bab5-00658a30ede6",
+      "name": "Registro: DELETE",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        980
+      ],
+      "webhookId": "8f4e1117-4149-5a85-9da8-b6cfb3a56f76"
+    },
+    {
+      "parameters": {
+        "jsCode": "const sd = $getWorkflowStaticData('global');\nsd.registro = []; sd.contador = 0;\nreturn [{ json: { ok: true, limpiado: true } }];"
+      },
+      "id": "417d2fd3-1551-5004-8403-a1afbd916f5f",
+      "name": "Limpiar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        980
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "e5e265f1-7e46-5b9c-829c-0a3a93550b00",
+      "name": "Responder limpieza",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        480,
+        980
+      ]
+    }
+  ],
+  "connections": {
+    "CMDB: GET": {
+      "main": [
+        [
+          {
+            "node": "Buscar activo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar activo": {
+      "main": [
+        [
+          {
+            "node": "Responder CMDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: POST": {
+      "main": [
+        [
+          {
+            "node": "Guardar entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar entrada": {
+      "main": [
+        [
+          {
+            "node": "Responder registro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: GET": {
+      "main": [
+        [
+          {
+            "node": "Listar entradas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar entradas": {
+      "main": [
+        [
+          {
+            "node": "Responder lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro: DELETE": {
+      "main": [
+        [
+          {
+            "node": "Limpiar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpiar": {
+      "main": [
+        [
+          {
+            "node": "Responder limpieza",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "6d9761fe-a609-51f3-9155-ae76e1b792ac",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

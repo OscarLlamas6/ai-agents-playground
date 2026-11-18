@@ -1,0 +1,8 @@
+{
+  "ticket_id": "TCK-1002",
+  "asunto": "Correo saliente no funciona",
+  "descripcion": "Los correos quedan en la bandeja de salida desde hace una hora. A algunos compañeros del piso 2 les pasa lo mismo, el correo entrante sí llega.",
+  "host": "mail-relay-02",
+  "solicitante": "usuario.ficticio02",
+  "canal": "correo"
+}

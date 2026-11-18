@@ -1,0 +1,27 @@
+meta {
+  name: 08 · Aprobar la escritura
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/sessions/{{approval_session_id}}/approve
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "approved": true
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq completed
+  res.body.answer: contains guardada
+}
+
+docs {
+  Reanuda el agente con la decisión. Una segunda llamada daría 409 (ya no hay nada pendiente).
+}

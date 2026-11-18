@@ -1,0 +1,32 @@
+meta {
+  name: 03 Chat - misma sesion recuerda
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "message": "¿Cómo me llamo?",
+    "session_id": "{{session_id}}",
+    "user_id": "marta"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.answer: contains Marta
+}
+
+docs {
+  Paso 3. Reenviamos el session_id: el agente recupera la conversación del checkpointer (Postgres) y sabe el nombre.
+}

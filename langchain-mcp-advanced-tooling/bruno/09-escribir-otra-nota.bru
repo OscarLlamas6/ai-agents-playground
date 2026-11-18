@@ -1,0 +1,27 @@
+meta {
+  name: 09 · Escribir otra nota
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/chat
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "message": "Agrega una nota a Marta: 'Confirmar el NIT'",
+    "user_id": "{{user_id}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq awaiting_approval
+}
+
+script:post-response {
+  bru.setVar("reject_session_id", res.body.session_id);
+}

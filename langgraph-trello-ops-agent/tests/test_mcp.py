@@ -1,0 +1,47 @@
+"""MCP opcional: las herramientas de un servidor MCP se suman al grafo y, por defecto, exigen aprobación."""
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+from conftest import call
+from langchain_core.messages import AIMessage
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.types import Command
+
+pytest.importorskip("langchain_mcp_adapters")
+
+from trello_ops.mcp_tools import load_mcp_tools  # noqa: E402
+from trello_ops.state import Context  # noqa: E402
+
+
+@pytest.fixture
+def mcp_env(monkeypatch, tmp_path):
+    conf = tmp_path / "servers.json"
+    conf.write_text(json.dumps({"demo": {"transport": "stdio", "command": sys.executable,
+                                         "args": [str(Path(__file__).parent / "mcp_demo_server.py")]}}))
+    monkeypatch.setenv("USE_MCP", "1")
+    monkeypatch.setenv("MCP_SERVERS_FILE", str(conf))
+    monkeypatch.setenv("MCP_READONLY_TOOLS", "status_page")
+
+
+def test_mcp_is_off_by_default():
+    assert load_mcp_tools() == ({}, set())
+
+
+def test_mcp_tools_default_to_approval_unless_declared_read_only(mcp_env):
+    tools, needs_approval = load_mcp_tools()
+    assert set(tools) == {"status_page", "notify_team"} and needs_approval == {"notify_team"}
+
+
+def test_mcp_read_runs_and_mcp_write_waits_for_approval(mcp_env, make_graph):
+    tools, needs_approval = load_mcp_tools()
+    script = [call("status_page", {"service": "vpn"}, "m1"), call("notify_team", {"message": "VPN ok"}, "m2"), AIMessage("Avisé.")]
+    graph, _ = make_graph(script, checkpointer=InMemorySaver(), extra_tools=tools, approval_tools=needs_approval)
+    cfg = {"configurable": {"thread_id": "mcp"}}
+    paused = graph.invoke({"messages": [{"role": "user", "content": "avisa"}]}, cfg, context=Context("u"))
+    assert paused["__interrupt__"][0].value["actions"][0]["tool"] == "notify_team"
+    assert any("vpn: operativo" in m.content for m in paused["messages"] if m.type == "tool")   # la lectura ya corrió
+    final = graph.invoke(Command(resume=True), cfg, context=Context("u"))
+    assert any("aviso enviado: VPN ok" in m.content for m in final["messages"] if m.type == "tool")
