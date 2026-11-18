@@ -238,7 +238,7 @@ docker compose down                              # conserva los datos · `down -
 
 `langchain 1.5.0`, `langchain-core 1.8.0`, `langgraph 1.2.22`, `langgraph-checkpoint-postgres 3.2.1`, `psycopg 3.3.9`, `pgvector 0.5.1`, `fastapi 0.163.0`, `uvicorn 0.54.0`, `streamlit 1.67.0`, `click 8.5.1`, `httpx 0.28.1`, `pydantic 2.14.3`, Bruno CLI `4.3.0` (resueltas con `uv sync` en noviembre de 2026).
 
-**Qué se probó:** 32 pruebas (30 sin red y 2 contra Postgres + pgvector reales con `DATABASE_URL_TEST`); la API y la colección de Bruno (15 peticiones, 9 pruebas y 24 aserciones) con el modelo y los embeddings falsos, en local y en Docker; la sesión continuada tras reiniciar la API y el contenedor (PostgresSaver real); la interfaz con `AppTest` y arrancándola de verdad; la CLI (`ingest`, `ask`, `log`) en local y en Docker.
+**Qué se probó:** 34 pruebas (31 sin red y 3 contra Postgres + pgvector reales con `DATABASE_URL_TEST`); la API y la colección de Bruno (15 peticiones, 9 pruebas y 24 aserciones) con el modelo y los embeddings falsos, en local y en Docker; la sesión continuada tras reiniciar la API y el contenedor (PostgresSaver real); la interfaz con `AppTest` y arrancándola de verdad; la CLI (`ingest`, `ask`, `log`) en local y en Docker.
 **Qué NO se probó:** las herramientas nuevas (`get_ticket`, `sla_deadline`, `lookup_asset`, `report_gap`) con un modelo real (OpenAI, Anthropic o LM Studio): el modelo falso solo demuestra el mecanismo, no la calidad de la elección de herramientas; un modelo pequeño elegirá peor. El modo `chat` interactivo de la CLI no se automatizó. El `docker-compose.host.yml` solo pasó `docker compose config`.
 
 ## 💰 Costo

@@ -39,3 +39,10 @@ def test_new_session_button_clears_the_conversation(api):
     at.chat_input[0].set_value("Hola").run()
     at.button[0].click().run()
     assert at.session_state["session_id"] is None and at.session_state["messages"] == []
+
+
+def test_sidebar_shows_the_session_id_right_after_the_first_answer(api):
+    at = AppTest.from_file(UI, default_timeout=30).run()
+    assert "sesión nueva" in at.sidebar.code[0].value
+    at.chat_input[0].set_value("Hola").run()
+    assert at.sidebar.code[0].value == at.session_state["session_id"]        # sin recargar ni escribir otro mensaje

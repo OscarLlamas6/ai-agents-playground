@@ -22,7 +22,8 @@ if "session_id" not in st.session_state:
 with st.sidebar:
     st.header("Sesión")
     user_id = st.text_input("Usuario", value="demo")
-    st.code(st.session_state.session_id or "(sesión nueva: el servidor asignará un id)")
+    session_slot = st.empty()        # un hueco que se rellena de nuevo cuando el servidor nos devuelve el id (más abajo)
+    session_slot.code(st.session_state.session_id or "(sesión nueva: el servidor asignará un id)")
     if st.button("🆕 Nueva sesión"):
         st.session_state.session_id, st.session_state.messages = None, []
         st.rerun()
@@ -56,6 +57,7 @@ if prompt := st.chat_input("Escribe tu pregunta…"):
             if r.status_code == 200:
                 data = r.json()
                 st.session_state.session_id = data["session_id"]                       # el id que el servidor nos devuelve
+                session_slot.code(data["session_id"])                                  # y se muestra ya, sin esperar otro mensaje
                 cites = ", ".join(f"[{c['id']}] {c['section']}" for c in data["citations"]) or "sin citas"
                 u = data["usage"]
                 reply = {"answer": data["answer"], "meta": f"🔧 {', '.join(data['tools_used']) or 'sin herramientas'} · 📎 {cites} · "
