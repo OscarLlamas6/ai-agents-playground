@@ -108,3 +108,14 @@ def test_resource_template_and_prompt():
     assert templates[0].uriTemplate == "hubspot://contact/{contact_id}"
     assert "Luis Pérez" in card and "Transportes Quetzal" in card
     assert prompts[0].name == "prepare_call" and "102" in got.messages[0].content.text
+
+
+# ── check_hubspot.py: las pistas dicen qué corregir (sin red) ──
+def test_check_hubspot_hints_map_status_codes_to_fixes():
+    import check_hubspot
+    from hubspot_client import CRMError
+
+    assert "token" in check_hubspot.hint(CRMError("HubSpot respondió 401 en POST /x")).lower()
+    assert "permisos" in check_hubspot.hint(CRMError("HubSpot respondió 403 en POST /x"))
+    assert "v3" in check_hubspot.hint(CRMError("HubSpot respondió 404 en POST /x"))
+    assert "internet" in check_hubspot.hint(CRMError("No se pudo contactar a HubSpot (ConnectError)"))

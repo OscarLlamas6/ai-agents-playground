@@ -16,6 +16,11 @@ tasks:
     cmds:
       - uv sync
 
+  hubspot:check:
+    desc: "Comprueba tu cuenta de HubSpot (token, permisos y rutas); task hubspot:check -- --write <id> crea una nota de prueba"
+    cmds:
+      - uv run python check_hubspot.py {{.CLI_ARGS}}
+
   ask:
     desc: 'Pregunta al agente (task ask -- "pregunta"); pide aprobación antes de escribir'
     interactive: true

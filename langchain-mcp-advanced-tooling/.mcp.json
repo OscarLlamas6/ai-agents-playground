@@ -3,7 +3,11 @@
     "hubspot": {
       "command": "uv",
       "args": ["run", "--directory", "${CLAUDE_PROJECT_DIR:-.}", "python", "mcp_server.py"],
-      "env": { "HUBSPOT_MODE": "fake" }
+      "env": {
+        "HUBSPOT_MODE": "${HUBSPOT_MODE:-fake}",
+        "HUBSPOT_TOKEN": "${HUBSPOT_TOKEN:-}",
+        "HUBSPOT_API_VERSION": "${HUBSPOT_API_VERSION:-2026-03}"
+      }
     }
   }
 }

@@ -106,6 +106,9 @@ def build_server(s: Settings | None = None, crm: CRM | None = None) -> FastMCP:
 
 
 def main() -> None:
+    from dotenv import find_dotenv, load_dotenv
+
+    load_dotenv(find_dotenv(usecwd=True))        # lee tu .env (las variables que ya existan en el entorno tienen prioridad)
     s = Settings.from_env()
     if s.hubspot_mode == "live" and not s.hubspot_token:
         sys.exit("HUBSPOT_MODE=live necesita HUBSPOT_TOKEN en el .env")

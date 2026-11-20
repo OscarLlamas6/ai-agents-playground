@@ -9,6 +9,7 @@ Hace: initialize → tools/list → resources/list → prompts/list y, si existe
 
 import asyncio
 import json
+import os
 import sys
 from contextlib import asynccontextmanager
 
@@ -25,7 +26,9 @@ async def connect(command: list[str] | None = None, url: str | None = None):
         async with streamablehttp_client(url) as (read, write, _), ClientSession(read, write) as session:
             yield session
     else:
-        params = StdioServerParameters(command=command[0], args=command[1:])   # stdio: el cliente lanza el servidor
+        # stdio: el cliente lanza el servidor. El hijo recibe solo un entorno básico: se le pasan las variables de HubSpot.
+        env = {k: os.environ[k] for k in ("HUBSPOT_MODE", "HUBSPOT_TOKEN", "HUBSPOT_API_VERSION") if k in os.environ}
+        params = StdioServerParameters(command=command[0], args=command[1:], env=env or None)
         async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
             yield session
 
@@ -51,12 +54,23 @@ async def explore(command: list[str] | None = None, url: str | None = None) -> N
         if "get_current_time" in names:                                     # 3) una llamada de ejemplo
             r = await session.call_tool("get_current_time", {"timezone": "America/Guatemala"})
             print("llamada get_current_time →", r.content[0].text)
-        if "search_contacts" in names:
-            r = await session.read_resource("hubspot://contact/101")
-            print("lectura del recurso hubspot://contact/101 →\n" + r.contents[0].text)
+        if "search_contacts" in names:                                      # el id depende del modo (101 simulado; un número largo en HubSpot)
+            found = await session.call_tool("search_contacts", {"query": "Morales", "limit": 1})
+            contacts = (found.structuredContent or {}).get("contacts", [])
+            if found.isError:                                               # error DE LA HERRAMIENTA: viaja en un resultado normal
+                print("(search_contacts devolvió un error:", found.content[0].text[:160], ")")
+            elif contacts:
+                uri = f"hubspot://contact/{contacts[0]['id']}"
+                r = await session.read_resource(uri)
+                print(f"lectura del recurso {uri} →\n" + r.contents[0].text)
+            else:
+                print("(search_contacts('Morales') no devolvió nada: ¿importaste los contactos de prueba?)")
 
 
 if __name__ == "__main__":
+    from dotenv import find_dotenv, load_dotenv
+
+    load_dotenv(find_dotenv(usecwd=True))
     url = sys.argv[sys.argv.index("--url") + 1] if "--url" in sys.argv else None
     cmd = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else (None if url else REFERENCE)
     asyncio.run(explore(cmd, url))

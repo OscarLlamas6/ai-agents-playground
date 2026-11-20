@@ -190,6 +190,29 @@ claude mcp add --transport http --scope project hubspot-http http://127.0.0.1:80
 claude mcp list
 ```
 
+**Claude Code con HubSpot real (modo `live`).** El `.mcp.json` lee `HUBSPOT_MODE`, `HUBSPOT_TOKEN` y `HUBSPOT_API_VERSION` **del entorno desde el que lanzas `claude`** (`${VAR:-valor}`), así el token no queda escrito en ningún archivo del repositorio:
+
+```bash
+cd ai-agents-playground/langchain-mcp-advanced-tooling
+export HUBSPOT_MODE=live
+export HUBSPOT_TOKEN=pat-na1-...            # tu Service Key (ver docs/CUENTA_HUBSPOT.md)
+# export HUBSPOT_API_VERSION=v3             # solo si la ruta con fecha da 404
+uv run python check_hubspot.py              # compruébalo primero: debe salir ✅
+claude                                      # abre Claude Code AQUÍ; aprueba el servidor "hubspot" cuando lo pida
+```
+
+Dentro de Claude Code: `/mcp` muestra el estado de `hubspot` y sus herramientas (`search_contacts`, `get_contact_notes`, `add_note`). Pídele, por ejemplo, *«Busca a Ana Morales y resume sus notas»* y luego *«Agrega una nota a su contacto: llamar el lunes»*. Claude Code **pide tu permiso antes de cada herramienta** (eso es la aprobación humana); revisa los argumentos de `add_note` antes de aceptar. Sin esas variables, el servidor arranca en modo simulado (`fake`).
+
+Alternativa sin editar el entorno ni el repositorio (el token queda en tu configuración personal, `~/.claude.json`, **no** en el repo):
+
+```bash
+claude mcp add hubspot-live --scope local --transport stdio \
+  -e HUBSPOT_MODE=live -e HUBSPOT_TOKEN="$HUBSPOT_TOKEN" -- \
+  uv run --directory "$PWD" python mcp_server.py
+claude mcp list        # debe aparecer hubspot-live ✔ Connected
+# al terminar:  claude mcp remove hubspot-live
+```
+
 **Claude Desktop.** Menú *Settings → Developer → Edit Config* (archivo `claude_desktop_config.json`: macOS `~/Library/Application Support/Claude/`, Windows `%APPDATA%\Claude\`, Linux `~/.config/Claude/`). Usa **rutas absolutas** (el directorio de trabajo no está definido) y reinicia la aplicación por completo:
 
 ```json
@@ -204,16 +227,20 @@ claude mcp list
 }
 ```
 
-Un servidor stdio recibe solo un entorno básico: las variables que necesite (`HUBSPOT_MODE`, `HUBSPOT_TOKEN`) van en `env`.
+Un servidor stdio recibe solo un entorno básico: las variables que necesite (`HUBSPOT_MODE`, `HUBSPOT_TOKEN`) van en `env` (el servidor **no** lee tu `.env`; en Claude Desktop pega los valores en el bloque `env`, o usa Claude Code como arriba).
 
 ## Con HubSpot real (modo `live`)
+
+> 📘 **Guía paso a paso** para crear la cuenta gratuita, importar los contactos de prueba (`samples/hubspot_contactos.csv`) y crear la Service Key: [`docs/CUENTA_HUBSPOT.md`](../../edutek-genai-cohorte1/docs/CUENTA_HUBSPOT.md). Antes de clase, `uv run python check_hubspot.py` (o `task hubspot:check`) comprueba token, permisos y rutas y dice qué corregir.
 
 1. En una **cuenta de pruebas** de HubSpot crea una **Service Key** (*Configuración → Integraciones → Service Keys*, o *Desarrollo → Claves*) con los permisos `crm.objects.contacts.read` y, para `add_note`, `crm.objects.contacts.write`.
 2. En `.env`: `HUBSPOT_MODE=live` y `HUBSPOT_TOKEN=...` (el `.env` no se sube a Git; el token nunca se imprime).
 3. `HUBSPOT_API_VERSION=2026-03` usa las rutas con fecha (`/crm/objects/2026-03/...`); `v3` usa las heredadas (`/crm/v3/objects/...`).
 4. Crea contactos de prueba con datos **ficticios**.
 
-> ⚠️ **NO se probó contra una cuenta real de HubSpot** (no había llaves). Lo verificado: las rutas, el formato de la autenticación (`Authorization: Bearer`) y el cuerpo de las peticiones se contrastaron con `developers.hubspot.com` (búsqueda de contactos con `query`/`limit`/`properties`; creación de notas con `hs_timestamp`, `hs_note_body` y asociación de tipo `202` a contacto), y el cliente se prueba con un transporte simulado (`httpx.MockTransport`). **Sin verificar en vivo:** la ruta `.../notes/search` con el filtro `associations.contact`, la lectura de un contacto por id bajo la versión con fecha, los permisos exactos de los endpoints de notas y el comportamiento de una Service Key (en beta pública) en el plan gratuito. Si algo falla, prueba `HUBSPOT_API_VERSION=v3`.
+> ✅ **Verificado en vivo (19 de noviembre de 2026, cuenta gratuita, `HUBSPOT_API_VERSION=2026-03`, con `check_hubspot.py`):** búsqueda de contactos, lectura de un contacto por id y búsqueda de notas por contacto. **Aún sin verificar en vivo: la escritura de notas (`add_note`)**; pruébala con `check_hubspot.py --write <id>`.
+>
+> ⚠️ **Lo demás se contrastó solo con la documentación** (el agente que escribió este proyecto no tenía llaves). Lo verificado: las rutas, el formato de la autenticación (`Authorization: Bearer`) y el cuerpo de las peticiones se contrastaron con `developers.hubspot.com` (búsqueda de contactos con `query`/`limit`/`properties`; creación de notas con `hs_timestamp`, `hs_note_body` y asociación de tipo `202` a contacto), y el cliente se prueba con un transporte simulado (`httpx.MockTransport`). **Sin verificar en vivo:** la ruta `.../notes/search` con el filtro `associations.contact`, la lectura de un contacto por id bajo la versión con fecha, los permisos exactos de los endpoints de notas y el comportamiento de una Service Key (en beta pública) en el plan gratuito. Si algo falla, prueba `HUBSPOT_API_VERSION=v3`.
 
 ## Con Docker (servidor MCP, API y UI)
 
