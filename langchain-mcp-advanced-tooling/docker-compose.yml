@@ -24,7 +24,10 @@ services:
   mcp:
     <<: *common
     command: ["python", "mcp_server.py", "--http"]
-    environment: *env
+    environment:
+      <<: *env
+      MCP_HOST: 0.0.0.0     # fijo: el .env (MCP_HOST=127.0.0.1) pisaría al del Dockerfile y la API no alcanzaría a este servicio
+      MCP_PORT: "8000"
     ports: ["127.0.0.1:8000:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8000), 2)"]
