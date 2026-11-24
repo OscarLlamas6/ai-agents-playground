@@ -86,3 +86,10 @@ def test_mcp_results_are_plain_text_not_content_blocks(mcp_env):
 
     tools, _ = load_mcp_tools()
     assert invoke_tool(tools["status_page"], {"service": "vpn"}) == "vpn: operativo"
+
+
+def test_blank_arguments_are_dropped_before_calling_a_server():
+    from trello_ops.mcp_tools import drop_blank_args
+
+    sent = {"query": "SMBv3", "vendor": " ", "product": "", "published_since": None, "kev": True, "include_unaffected": False, "offset": 0}
+    assert drop_blank_args(sent) == {"query": "SMBv3", "kev": True, "include_unaffected": False, "offset": 0}

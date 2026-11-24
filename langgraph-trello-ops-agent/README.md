@@ -66,7 +66,7 @@ flowchart LR
 | [`main.py`](main.py) | Línea de comandos: mensaje único, `--trace`, `--chat`, `--db` | `thread_id`, `Context(user_id)` |
 | [`check_env.py`](check_env.py) | Muestra qué `.env`, modelo, embeddings, Trello y MCP se usarán, sin imprimir llaves (`task check`) | (utilidad) |
 | [`check_trello.py`](check_trello.py) | Compara tu Trello con los tableros, listas y tarjetas que esperan las demos; solo lee (`task trello:check`) | (utilidad) |
-| [`tests/`](tests) | 52 pruebas **sin red** (grafo, cliente de Trello, MCP, API con `TestClient`, interfaz con `AppTest`) | modelo guionado + `FakeTrello` |
+| [`tests/`](tests) | 54 pruebas **sin red** (grafo, cliente de Trello, MCP, API con `TestClient`, interfaz con `AppTest`) | modelo guionado + `FakeTrello` |
 
 ## Cómo correrlo
 
@@ -196,7 +196,7 @@ uv sync --group mcp
 # mcp_servers.example.json trae dos servidores AJENOS: el de hora (local, stdio) y el de CVE de Excession Labs (remoto, HTTP, sin llave)
 USE_MCP=1 MCP_SERVERS_FILE=mcp_servers.example.json MCP_TOOL_PREFIX=1 \
 MCP_READONLY_TOOLS='excession_cve_search,excession_cve_get,time_get_current_time' \
-uv run python main.py --trace 'Busca vulnerabilidades de SMBv3 explotadas activamente (KEV) y comenta en "Actualizar parches del servidor de archivos" un resumen con la fecha y hora actual en America/Guatemala'
+uv run python main.py --trace 'Busca vulnerabilidades explotadas activamente (KEV) usando solo el texto SMBv3 y el filtro KEV, sin ningún otro filtro, y comenta en la tarjeta "Actualizar parches del servidor de archivos" del tablero "Operaciones TI" un resumen con la fecha y hora actual en America/Guatemala'
 ```
 
 | Variable | Qué hace |
@@ -219,7 +219,7 @@ Seguridad: las anotaciones `readOnlyHint` de un servidor ajeno **no se usan** pa
 ```bash
 task check                  # qué configuración leerá el proyecto (modelo, embeddings, Trello, MCP), sin imprimir llaves
 task trello:check           # tu Trello real frente a lo que esperan las demos (solo lee)
-task test                   # 52 pruebas sin red
+task test                   # 54 pruebas sin red
 task trace -- 'Crea una tarjeta "Revisar alertas de disco"'
 task api · task ui · task bruno · task dev
 task health                 # estado de la API (modelo, Trello, sesiones)
@@ -285,7 +285,7 @@ task docker:ask:mcp                # la CLI del contenedor con la demo de CVE
 
 `langgraph 1.2.22`, `langgraph-checkpoint 4.3.2`, `langgraph-checkpoint-sqlite 3.1.3`, `langchain 1.5.0`, `langchain-core 1.8.0`, `langchain-openai 1.8.0`, `langchain-anthropic 1.7.10`, `fastapi 0.163.0`, `uvicorn 0.54.0`, `streamlit 1.67.0`, `httpx 0.28.1`, `langgraph-cli 0.4.43`, `langchain-mcp-adapters 0.3.2` (grupo `mcp`), `pydantic 2.14.3`, `pytest 9.2.0`, CLI de Bruno `@usebruno/cli 4.3.0` (Node v20.10.0) (resueltas con `uv sync` en noviembre de 2026; versiones exactas en `uv.lock`). Python 3.12.
 
-**Probado:** 52 pruebas sin red (aprobación aceptada y rechazada, tope de pasos, falta de progreso, `recursion_limit`, persistencia del hilo entre ejecuciones y reinicios, aprobación pendiente que sobrevive al reinicio, memoria de largo plazo, cliente de Trello con sesión falsa, MCP con un servidor local); el servidor `langgraph dev` por su API REST; la imagen Docker (API y UI **healthy** con `docker compose up`, colección Bruno 14/14 contra el contenedor, reinicio de la API con sesión y aprobación pendiente intactas); la **API** en vivo con uvicorn (reinicio del proceso y continuación de la misma sesión, incluida una aprobación pendiente); la **colección Bruno** de punta a punta con el CLI (14 peticiones, 9 pruebas, 22 aserciones); la **interfaz Streamlit** con `AppTest` y arrancada de verdad (`/_stcore/health` responde `ok`); y el agente completo con **OpenAI `gpt-6-luna`** contra Trello simulado (crear y mover una tarjeta, con dos aprobaciones). **No se probó:** Trello real, Anthropic, LM Studio, el Studio alojado (interfaz web), la aplicación de escritorio de Bruno (solo su CLI; el formato `.bru` se validó porque el CLI lo ejecuta), la interfaz Streamlit en un navegador real (solo `AppTest` y el chequeo de salud) y el autoalojamiento de LangGraph Server.
+**Probado:** 54 pruebas sin red (aprobación aceptada y rechazada, tope de pasos, falta de progreso, `recursion_limit`, persistencia del hilo entre ejecuciones y reinicios, aprobación pendiente que sobrevive al reinicio, memoria de largo plazo, cliente de Trello con sesión falsa, MCP con un servidor local); el servidor `langgraph dev` por su API REST; la imagen Docker (API y UI **healthy** con `docker compose up`, colección Bruno 14/14 contra el contenedor, reinicio de la API con sesión y aprobación pendiente intactas); la **API** en vivo con uvicorn (reinicio del proceso y continuación de la misma sesión, incluida una aprobación pendiente); la **colección Bruno** de punta a punta con el CLI (14 peticiones, 9 pruebas, 22 aserciones); la **interfaz Streamlit** con `AppTest` y arrancada de verdad (`/_stcore/health` responde `ok`); y el agente completo con **OpenAI `gpt-6-luna`** contra Trello simulado (crear y mover una tarjeta, con dos aprobaciones). **No se probó:** Trello real, Anthropic, LM Studio, el Studio alojado (interfaz web), la aplicación de escritorio de Bruno (solo su CLI; el formato `.bru` se validó porque el CLI lo ejecuta), la interfaz Streamlit en un navegador real (solo `AppTest` y el chequeo de salud) y el autoalojamiento de LangGraph Server.
 
 ## 💰 Costo
 

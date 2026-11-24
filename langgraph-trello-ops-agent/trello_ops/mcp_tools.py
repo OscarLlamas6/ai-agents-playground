@@ -108,10 +108,19 @@ def _as_text(result) -> str:
     return str(result)
 
 
+def drop_blank_args(args: dict) -> dict:
+    """Quita los argumentos vacíos (None o solo espacios) antes de llamar a un servidor MCP.
+
+    Algunos modelos no omiten los parámetros opcionales: mandan " " en cada uno, y el servidor ajeno los rechaza.
+    `False` y `0` son valores legítimos y se conservan. Si faltara un parámetro obligatorio, el servidor lo dirá con claridad.
+    """
+    return {k: v for k, v in args.items() if not (v is None or (isinstance(v, str) and not v.strip()))}
+
+
 def invoke_tool(tool: BaseTool, args: dict) -> str:
     """Invoca una herramienta; las que solo tienen versión asíncrona (las de MCP) se ejecutan con `ainvoke`."""
     if tool.func is None and getattr(tool, "coroutine", None) is not None:
-        return _as_text(run_sync(tool.ainvoke(args)))
+        return _as_text(run_sync(tool.ainvoke(drop_blank_args(args))))
     return _as_text(tool.invoke(args))
 
 

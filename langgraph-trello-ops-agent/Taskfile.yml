@@ -10,7 +10,7 @@ vars:
   API_PORT: '{{default "8011" .API_PORT}}'
   MCP_FILE: mcp_servers.example.json
   MCP_READONLY: excession_cve_search,excession_cve_get,time_get_current_time
-  MCP_DEFAULT: 'Busca vulnerabilidades de SMBv3 explotadas activamente (KEV) y comenta en "Actualizar parches del servidor de archivos" un resumen de las más graves, con la fecha y hora actual en America/Guatemala'
+  MCP_DEFAULT: 'Busca vulnerabilidades explotadas activamente (KEV) usando solo el texto SMBv3 y el filtro KEV, sin ningún otro filtro, y comenta en la tarjeta "Actualizar parches del servidor de archivos" del tablero "Operaciones TI" un resumen de las más graves, con la fecha y hora actual en America/Guatemala'
   MCP_MESSAGE: '{{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}{{shellQuote .MCP_DEFAULT}}{{end}}'
 
 tasks:

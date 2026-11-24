@@ -39,7 +39,10 @@ class OpsNodes:
     write_tools: set[str] = field(default_factory=lambda: set(WRITE_TOOLS))   # las herramientas MCP se agregan aquí
 
     def __post_init__(self):
-        self.model_with_tools = self.model.bind_tools(list(self.tools.values()))
+        # OpenAI (Responses API): si no se envía `strict`, intenta el modo estricto, donde TODOS los parámetros opcionales pasan a
+        # obligatorios y el modelo los rellena con basura (".", "x", la fecha de hoy). Con strict=False puede omitirlos.
+        options = {"strict": False} if getattr(self.model, "_llm_type", "") == "openai-chat" else {}
+        self.model_with_tools = self.model.bind_tools(list(self.tools.values()), **options)
 
     # ── Nodo 1: cargar contexto (memoria de largo plazo) y reiniciar los contadores del turno ──
     def load_context(self, state: OpsState, runtime: Runtime[Context]) -> dict:

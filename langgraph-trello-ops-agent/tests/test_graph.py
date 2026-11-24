@@ -207,3 +207,16 @@ def test_preferences_persist_in_sqlite_and_keys_are_whitelisted(make_graph, tmp_
         graph, model = make_graph([AIMessage("hola")], checkpointer=saver, store=store)
         ask(graph, "hola", thread="b", user="ana")
     assert "default_list = Por hacer" in model.system_prompts[0] and "password" not in model.system_prompts[0]
+
+
+def test_openai_tools_are_not_strict_so_optional_arguments_can_be_omitted(trello, monkeypatch):
+    """En modo estricto OpenAI obliga a rellenar todos los parámetros opcionales (filtros inventados que vacían las búsquedas)."""
+    from langchain_openai import ChatOpenAI
+
+    from trello_ops.graph import RUNBOOK
+    from trello_ops.retriever import Retriever
+    from trello_ops.tools import build_tools
+
+    nodes = OpsNodes(ChatOpenAI(model="gpt-6-luna", api_key="sk-falsa"), build_tools(trello, Retriever(RUNBOOK)), trello)
+    sent = nodes.model_with_tools.kwargs["tools"]            # lo que viajaría en la petición; no se llama a la red
+    assert sent and all(t.get("function", t).get("strict") is False for t in sent)
