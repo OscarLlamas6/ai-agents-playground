@@ -19,8 +19,9 @@ COPY main.py api.py ui.py langgraph.json ./
 COPY trello_ops ./trello_ops
 COPY data ./data
 
-# /app/.data guarda la memoria (SQLite); como volumen nombrado hereda este dueño sin privilegios
-RUN useradd --system --uid 10001 --home /app app && mkdir /app/.data && chown app /app/.data
+# /app/.data guarda la memoria (SQLite); como volumen nombrado hereda este dueño sin privilegios.
+# El usuario tiene un directorio personal escribible (/home/app): `uvx` (servidores MCP lanzados por stdio, p. ej. el de hora) guarda ahí su caché y sus herramientas
+RUN useradd --system --uid 10001 --create-home --home-dir /home/app app && mkdir /app/.data && chown app /app/.data
 USER app
 
 # RUNNING_IN_DOCKER=1 hace que LOCAL_LLM_URL=http://localhost:... apunte a tu máquina (host.docker.internal), donde corre LM Studio

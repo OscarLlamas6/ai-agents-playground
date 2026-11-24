@@ -1,0 +1,28 @@
+# Activa los servidores MCP de terceros (servidor de hora + CVE de Excession Labs) en la API y en la CLI del contenedor.
+# Se SUMA al compose normal; sin este archivo, nada cambia:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.mcp.yml up --build -d
+#   docker compose -f docker-compose.yml -f docker-compose.mcp.yml run --rm agent --trace "Busca vulnerabilidades de SMBv3 explotadas activamente (KEV)"
+#
+# Qué resuelve respecto al compose normal:
+#   - la imagen se construye CON el grupo `mcp` (langchain-mcp-adapters): build arg WITH_MCP=1
+#   - el JSON de conexiones se MONTA en el contenedor (no está en la imagen)
+#   - `uvx` (servidor de hora) necesita una caché escribible: el usuario sin privilegios de la imagen tiene un directorio personal escribible (/home/app)
+# Necesita internet desde el contenedor (descarga el servidor de hora y llama al servidor remoto de CVE).
+# No pongas USE_MCP=1 en el .env: haría fallar al compose normal, que no instala MCP.
+
+x-mcp: &mcp
+  build:
+    args:
+      WITH_MCP: "1"
+  environment:
+    USE_MCP: "1"
+    MCP_SERVERS_FILE: /app/mcp_servers.example.json
+    MCP_TOOL_PREFIX: "1"
+    MCP_READONLY_TOOLS: "excession_cve_search,excession_cve_get,time_get_current_time"
+  volumes:
+    - ./mcp_servers.example.json:/app/mcp_servers.example.json:ro
+
+services:
+  api: *mcp
+  agent: *mcp

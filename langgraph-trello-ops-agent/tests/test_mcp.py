@@ -45,3 +45,44 @@ def test_mcp_read_runs_and_mcp_write_waits_for_approval(mcp_env, make_graph):
     assert any("vpn: operativo" in m.content for m in paused["messages"] if m.type == "tool")   # la lectura ya corrió
     final = graph.invoke(Command(resume=True), cfg, context=Context("u"))
     assert any("aviso enviado: VPN ok" in m.content for m in final["messages"] if m.type == "tool")
+
+
+# ───────────── servidores externos: variables de entorno, prefijos, comodines y servidores caídos ─────────────
+
+
+def test_env_placeholders_are_expanded_and_never_leaked(monkeypatch):
+    from trello_ops.mcp_tools import expand_env
+
+    monkeypatch.setenv("TOKEN_DE_PRUEBA", "s3creto")
+    conn = {"url": "https://x.example/mcp", "headers": {"Authorization": "Bearer ${TOKEN_DE_PRUEBA}"}, "args": ["--zona=${ZONA:-GT}"]}
+    assert expand_env(conn) == {"url": "https://x.example/mcp", "headers": {"Authorization": "Bearer s3creto"}, "args": ["--zona=GT"]}
+    monkeypatch.delenv("TOKEN_DE_PRUEBA")
+    with pytest.raises(RuntimeError, match="TOKEN_DE_PRUEBA") as err:
+        expand_env(conn)
+    assert "s3creto" not in str(err.value)
+
+
+def test_prefix_and_wildcard_readonly(mcp_env, monkeypatch):
+    monkeypatch.setenv("MCP_TOOL_PREFIX", "1")
+    monkeypatch.setenv("MCP_READONLY_TOOLS", "demo_status*")
+    tools, needs_approval = load_mcp_tools()
+    assert set(tools) == {"demo_status_page", "demo_notify_team"} and needs_approval == {"demo_notify_team"}
+
+
+def test_a_server_that_is_down_is_skipped_unless_strict(mcp_env, monkeypatch, capsys):
+    conf = json.loads(Path(__import__("os").environ["MCP_SERVERS_FILE"]).read_text())
+    conf["caido"] = {"transport": "stdio", "command": "comando-que-no-existe-xyz", "args": []}
+    Path(__import__("os").environ["MCP_SERVERS_FILE"]).write_text(json.dumps(conf))
+    tools, _ = load_mcp_tools()
+    assert set(tools) == {"status_page", "notify_team"}                # los demás servidores siguen disponibles
+    assert "«caido» omitido" in capsys.readouterr().err
+    monkeypatch.setenv("MCP_STRICT", "1")
+    with pytest.raises(RuntimeError, match="caido"):
+        load_mcp_tools()
+
+
+def test_mcp_results_are_plain_text_not_content_blocks(mcp_env):
+    from trello_ops.mcp_tools import invoke_tool
+
+    tools, _ = load_mcp_tools()
+    assert invoke_tool(tools["status_page"], {"service": "vpn"}) == "vpn: operativo"

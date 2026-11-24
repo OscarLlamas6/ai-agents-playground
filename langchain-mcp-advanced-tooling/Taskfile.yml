@@ -38,7 +38,7 @@ tasks:
       - uv run uvicorn api:app --port 8001
 
   ui:
-    desc: La interfaz Streamlit en http://127.0.0.1:8510 (necesita la API corriendo: task api)
+    desc: "La interfaz Streamlit en http://127.0.0.1:8510 (necesita la API corriendo: task api)"
     env:
       API_URL: http://127.0.0.1:8001
     cmds:

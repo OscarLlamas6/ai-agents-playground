@@ -1,10 +1,15 @@
 # https://taskfile.dev · `task` lista las tareas · requiere: uv (Python) y, para Docker, docker compose.
 # Lo que escribas después de `--` es el mensaje al agente:
 #   task trace -- 'Crea una tarjeta "Revisar alertas de disco"'
+# Para la clase: task check · task test · task docker:start:mcp · task docker:ps · task docker:logs -- api · task docker:mcp:tools
 version: "3"
 
 vars:
   MESSAGE: '{{default "Muestra mis tableros" .CLI_ARGS}}'
+  API_PORT: '{{default "8011" .API_PORT}}'
+  MCP_FILE: mcp_servers.example.json
+  MCP_READONLY: excession_cve_search,excession_cve_get,time_get_current_time
+  MCP_MESSAGE: 'Busca vulnerabilidades de SMBv3 explotadas activamente (KEV) y comenta en "Actualizar parches del servidor de archivos" un resumen de las más graves, con la fecha y hora actual en America/Guatemala'
 
 tasks:
   default:
@@ -41,7 +46,7 @@ tasks:
       - uv run uvicorn api:app --port 8011
 
   ui:
-    desc: Interfaz Streamlit en http://localhost:8511 (necesita la API en marcha: task api)
+    desc: "Interfaz Streamlit en http://localhost:8511 (necesita la API en marcha: task api)"
     cmds:
       - API_URL=http://127.0.0.1:8011 uv run streamlit run ui.py --server.port 8511
 
@@ -61,10 +66,110 @@ tasks:
     cmds:
       - uv run pytest -q
 
+  check:
+    desc: Muestra qué configuración leerá el proyecto (modelo, embeddings, Trello, MCP) sin imprimir llaves
+    cmds:
+      - uv run python check_env.py
+
+  health:
+    desc: "Estado de la API (task health; otro puerto: task health API_PORT=8012)"
+    cmds:
+      - curl -s localhost:{{.API_PORT}}/health
+      - echo
+
+  reset:
+    desc: "Borra la memoria local (.data/ops.sqlite): sesiones y preferencias de la CLI y de la API (no toca Docker; para eso, task docker:reset)"
+    cmds:
+      - rm -f .data/ops.sqlite .data/ops.sqlite-shm .data/ops.sqlite-wal
+
+  mcp:tools:
+    desc: Qué herramientas MCP carga la configuración de ejemplo (hora + CVE) y cuáles piden aprobación; necesita internet
+    env:
+      USE_MCP: "1"
+      MCP_SERVERS_FILE: "{{.MCP_FILE}}"
+      MCP_TOOL_PREFIX: "1"
+      MCP_READONLY_TOOLS: "{{.MCP_READONLY}}"
+    cmds:
+      - uv run --group mcp python -m trello_ops.mcp_tools
+
+  mcp:ask:
+    desc: 'El agente con MCP de terceros (hora + CVE); sin mensaje usa la demo de la clase (task mcp:ask -- "mensaje")'
+    interactive: true
+    env:
+      USE_MCP: "1"
+      MCP_SERVERS_FILE: "{{.MCP_FILE}}"
+      MCP_TOOL_PREFIX: "1"
+      MCP_READONLY_TOOLS: "{{.MCP_READONLY}}"
+    cmds:
+      - uv run --group mcp python main.py --trace "{{default .MCP_MESSAGE .CLI_ARGS}}"
+
   docker:up:
     desc: Levanta la API (:8011) y la interfaz (:8511) con healthchecks
     cmds:
       - docker compose up --build
+
+  docker:up:mcp:
+    desc: Como docker:up, pero con servidores MCP de terceros (hora + CVE de Excession Labs); necesita internet
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.mcp.yml up --build
+
+  docker:start:
+    desc: Como docker:up, pero en segundo plano (-d); luego task docker:ps y task docker:logs
+    cmds:
+      - docker compose up --build -d
+
+  docker:start:mcp:
+    desc: Como docker:up:mcp, pero en segundo plano (-d); necesita internet
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.mcp.yml up --build -d
+
+  docker:ps:
+    desc: Estado de los contenedores (api y ui deben estar en healthy)
+    cmds:
+      - docker compose ps
+
+  docker:logs:
+    desc: "Registros en vivo (task docker:logs, o de un servicio: task docker:logs -- api). Ctrl+C para salir"
+    cmds:
+      - docker compose logs --tail 60 -f {{.CLI_ARGS}}
+
+  docker:health:
+    desc: Estado de la API dentro del contenedor (modelo, Trello, sesiones)
+    cmds:
+      - curl -s localhost:{{.API_PORT}}/health
+      - echo
+
+  docker:restart:
+    desc: "Reinicia la API conservando las sesiones (task docker:restart; otro servicio: task docker:restart -- ui)"
+    cmds:
+      - docker compose restart {{default "api" .CLI_ARGS}}
+
+  docker:mcp:tools:
+    desc: Qué herramientas MCP cargó la API del contenedor y cuáles piden aprobación (stack iniciado con docker:start:mcp)
+    cmds:
+      - docker compose exec -T api python -m trello_ops.mcp_tools
+
+  docker:shell:
+    desc: Una terminal dentro del contenedor de la API
+    interactive: true
+    cmds:
+      - docker compose exec api bash
+
+  docker:down:
+    desc: Detiene y elimina los contenedores (las sesiones quedan en el volumen)
+    cmds:
+      - docker compose down
+
+  docker:reset:
+    desc: "Detiene y elimina los contenedores Y el volumen (borra sesiones y preferencias): demo limpia"
+    cmds:
+      - docker compose down -v
+
+  docker:ask:mcp:
+    desc: 'La CLI en un contenedor con MCP de terceros; sin mensaje usa la demo de la clase (task docker:ask:mcp -- "mensaje")'
+    interactive: true
+    cmds:
+      - docker compose -f docker-compose.yml -f docker-compose.mcp.yml run --rm agent --trace "{{default .MCP_MESSAGE .CLI_ARGS}}"
 
   docker:build:
     desc: Construye la imagen

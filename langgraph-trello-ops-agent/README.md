@@ -58,13 +58,14 @@ flowchart LR
 | [`trello_ops/model.py`](trello_ops/model.py), [`fake_model.py`](trello_ops/fake_model.py) | `build_model()` según `LLM_PROVIDER`; un modelo falso con reglas | `init_chat_model` |
 | [`trello_ops/persistence.py`](trello_ops/persistence.py) | Checkpointer y Store en RAM o en SQLite | `InMemorySaver`/`SqliteSaver`, `InMemoryStore`/`SqliteStore` |
 | [`trello_ops/runner.py`](trello_ops/runner.py) | Invocar, detectar la pausa, preguntar y reanudar | `stream(stream_mode="updates")`, `Command(resume=...)` |
-| [`trello_ops/mcp_tools.py`](trello_ops/mcp_tools.py) | Herramientas MCP opcionales (`USE_MCP=1`) | `langchain-mcp-adapters` |
+| [`trello_ops/mcp_tools.py`](trello_ops/mcp_tools.py) | Herramientas MCP opcionales, locales o **remotas** (`USE_MCP=1`) | `langchain-mcp-adapters` |
 | [`trello_ops/studio.py`](trello_ops/studio.py) + [`langgraph.json`](langgraph.json) | Entrada para el servidor de desarrollo | `langgraph dev`, Studio |
 | [`api.py`](api.py) | API FastAPI: `/chat`, sesiones, historial, `approve`, `health`; modelos Pydantic y errores HTTP | `thread_id` = `session_id`, `get_state`, `Command(resume=...)`, `delete_thread` |
 | [`ui.py`](ui.py) | Chat Streamlit que consume la API por HTTP, con botones Aprobar/Rechazar | (no es LangGraph: es un cliente más) |
 | [`bruno/`](bruno) | Colección Bruno de 14 peticiones con aserciones y pruebas | (cliente HTTP) |
 | [`main.py`](main.py) | Línea de comandos: mensaje único, `--trace`, `--chat`, `--db` | `thread_id`, `Context(user_id)` |
-| [`tests/`](tests) | 45 pruebas **sin red** (grafo, cliente de Trello, MCP, API con `TestClient`, interfaz con `AppTest`) | modelo guionado + `FakeTrello` |
+| [`check_env.py`](check_env.py) | Muestra qué `.env`, modelo, embeddings, Trello y MCP se usarán, sin imprimir llaves (`task check`) | (utilidad) |
+| [`tests/`](tests) | 49 pruebas **sin red** (grafo, cliente de Trello, MCP, API con `TestClient`, interfaz con `AppTest`) | modelo guionado + `FakeTrello` |
 
 ## Cómo correrlo
 
@@ -184,39 +185,78 @@ Autenticación (documentación oficial): clave y token por parámetros de consul
 
 ## MCP opcional (`USE_MCP=1`)
 
+El mismo cliente MCP de la S10 sirve para un servidor que lanzas tú (stdio) y para uno **remoto que mantiene otra empresa** (Streamable HTTP, con o sin autenticación). Las herramientas se suman a las nativas del agente.
+
 ```bash
 uv sync --group mcp
-# mcp_servers.json:  {"demo": {"transport": "stdio", "command": "python", "args": ["tests/mcp_demo_server.py"]}}
-USE_MCP=1 MCP_SERVERS_FILE=mcp_servers.json MCP_READONLY_TOOLS=status_page uv run python main.py --trace "..."
+# mcp_servers.example.json trae dos servidores AJENOS: el de hora (local, stdio) y el de CVE de Excession Labs (remoto, HTTP, sin llave)
+USE_MCP=1 MCP_SERVERS_FILE=mcp_servers.example.json MCP_TOOL_PREFIX=1 \
+MCP_READONLY_TOOLS='excession_cve_search,excession_cve_get,time_get_current_time' \
+uv run python main.py --trace 'Busca vulnerabilidades de SMBv3 explotadas activamente (KEV) y comenta en "Actualizar parches del servidor de archivos" un resumen con la fecha y hora actual en America/Guatemala'
 ```
 
-Las herramientas del servidor se suman a las del agente. **Por defecto toda herramienta MCP se trata como escritura** (pasa por `approve`); solo las que declares en `MCP_READONLY_TOOLS` se ejecutan sin aprobación (mínimo privilegio). Probado con un servidor MCP local por stdio (`tests/mcp_demo_server.py`), sin red. En Docker: `docker compose build --build-arg WITH_MCP=1`.
+| Variable | Qué hace |
+| --- | --- |
+| `MCP_SERVERS_FILE` | JSON con las conexiones. Admite `${VAR}` y `${VAR:-valor}`: el token vive en el `.env`, no en el JSON |
+| `MCP_READONLY_TOOLS` | Nombres (o comodines como `time_*`) que se ejecutan **sin** aprobación. **Por defecto toda herramienta MCP se trata como escritura** (pasa por `approve`): mínimo privilegio |
+| `MCP_TOOL_PREFIX=1` | Antepone el nombre del servidor a cada herramienta: se ve de dónde viene (y se evitan choques) |
+| `MCP_STRICT=1` | Si un servidor no responde, falla el arranque. Por defecto se **omite con un aviso** y el agente sigue con los demás |
+
+Con autenticación: `mcp_servers.github.example.json` conecta el servidor remoto de GitHub con `"headers": {"Authorization": "Bearer ${GITHUB_TOKEN}"}` (el token sale del entorno). Los servidores que solo admiten **OAuth interactivo** (como el MCP oficial de Trello, `https://mcp.trello.com/v1`) responden 401 a un cliente sin navegador: sirven en Claude Code o Cursor, no en esta API.
+
+Seguridad: las anotaciones `readOnlyHint` de un servidor ajeno **no se usan** para saltarse la aprobación (son pistas, no garantías), y lo que devuelve un servidor externo se trata como **datos, no instrucciones** (regla del prompt). Probado: 4 pruebas sin red de variables, prefijos, comodines, servidor caído y texto limpio (con el servidor local de `tests/mcp_demo_server.py`), y una corrida en vivo contra el servidor remoto de CVE de Excession Labs y el de hora (la búsqueda KEV y la hora corren libres; el comentario en Trello se pausa; las otras seis herramientas de CVE piden aprobación). **No probado:** el servidor remoto de GitHub con token, los servidores con OAuth y una conversación completa con OpenAI dentro del contenedor. **En Docker**, el stack completo con MCP: `docker compose -f docker-compose.yml -f docker-compose.mcp.yml up --build` (o `task docker:up:mcp`). Ese archivo adicional construye la imagen con el grupo `mcp`, monta `mcp_servers.example.json`, activa `USE_MCP` y declara de solo lectura `excession_cve_search`, `excession_cve_get` y `time_get_current_time`. Probado: API y UI *healthy*, 9 herramientas cargadas dentro del contenedor y llamadas reales a los dos servidores. No pongas `USE_MCP=1` en el `.env`: rompería el compose normal, que no instala MCP.
 
 ## Con Taskfile
 
+`task` (sin argumentos) lista todas las tareas. Las de la clase:
+
 ```bash
-task install
+task check                  # qué configuración leerá el proyecto (modelo, embeddings, Trello, MCP), sin imprimir llaves
+task test                   # 49 pruebas sin red
 task trace -- 'Crea una tarjeta "Revisar alertas de disco"'
-task chat            # conversación con memoria persistente en .data/ops.sqlite
-task api             # API FastAPI en :8011
-task ui              # interfaz Streamlit en :8511
-task bruno           # colección Bruno con su CLI
-task dev             # langgraph dev
-task test
+task api · task ui · task bruno · task dev
+task health                 # estado de la API (modelo, Trello, sesiones)
+task reset                  # borra la memoria local (.data/ops.sqlite) para una demo limpia
+
+# MCP de terceros (hora + CVE de Excession Labs); necesita internet y, para task mcp:ask, tu modelo de OpenAI
+task mcp:tools              # qué herramientas MCP se cargan y cuáles piden aprobación
+task mcp:ask                # la demo de la clase; o: task mcp:ask -- "tu mensaje"
+
+# Docker
+task docker:start           # api + ui en segundo plano     (con MCP: task docker:start:mcp)
+task docker:up              # lo mismo, en primer plano     (con MCP: task docker:up:mcp)
+task docker:ps              # estado de los contenedores (api y ui en healthy)
+task docker:logs -- api     # registros en vivo de un servicio (sin "-- api": de todos); Ctrl+C para salir
+task docker:health          # estado de la API dentro del contenedor
+task docker:mcp:tools       # qué herramientas MCP cargó la API del contenedor
+task docker:restart         # reinicia la API conservando las sesiones (otro servicio: task docker:restart -- ui)
+task docker:shell           # una terminal dentro del contenedor de la API
+task docker:down            # apaga (las sesiones quedan en el volumen)
+task docker:reset           # apaga y borra el volumen: demo limpia
+task docker:ask -- "msg"    # la CLI en un contenedor (con MCP: task docker:ask:mcp)
 ```
 
 ## Con Docker
 
-`docker compose up --build` levanta la **API** (`http://localhost:8011/docs`) y la **interfaz** (`http://localhost:8511`), ambas con *healthcheck*; la interfaz espera a que la API esté sana. Lee tu `.env` (de esta carpeta o de la raíz) y guarda las sesiones en el volumen `ops-data`. El agente de línea de comandos es un servicio aparte de un solo uso (perfil `cli`).
+`docker compose up --build` levanta la **API** (`http://localhost:8011/docs`) y la **interfaz** (`http://localhost:8511`), ambas con *healthcheck*; la interfaz espera a que la API esté sana. Lee tu `.env` (de la raíz y de esta carpeta; el segundo gana) y guarda las sesiones en el volumen `ops-data`. El agente de línea de comandos es un servicio aparte de un solo uso (perfil `cli`).
 
 ```bash
-task docker:up                                    # o: docker compose up --build   (puertos: API_PORT y UI_PORT)
+task docker:start                  # o: docker compose up --build -d     (puertos: API_PORT y UI_PORT)
+task docker:ps && task docker:health
+task docker:logs -- api
 task docker:ask -- 'Crea una tarjeta "Revisar alertas de disco"'     # CLI en un contenedor: pregunta [s/n] en la terminal
-task docker:chat
-docker compose down -v                            # borra también las sesiones
+task docker:reset                  # = docker compose down -v: borra también las sesiones
 ```
 
-> Si tu `.env` de la raíz define `LLM_PROVIDER=openai`, los contenedores lo usarán: para simular, pon `LLM_PROVIDER=fake` en un `.env` de esta carpeta. Con LM Studio, `task docker:ask:host` (solo Linux).
+**Con servidores MCP de terceros**, se suma un segundo archivo (`docker-compose.mcp.yml`):
+
+```bash
+task docker:start:mcp              # o: docker compose -f docker-compose.yml -f docker-compose.mcp.yml up --build -d
+task docker:mcp:tools              # 9 herramientas: 3 libres (excession_cve_search, excession_cve_get, time_get_current_time) y 6 con aprobación
+task docker:ask:mcp                # la CLI del contenedor con la demo de CVE
+```
+
+> Los contenedores usan el modelo y las llaves de tu `.env`: **cada petición llama a OpenAI** si `LLM_PROVIDER=openai`. Para simular (sin red ni costo), pon `LLM_PROVIDER=fake` en un `.env` de esta carpeta. Con LM Studio, `task docker:ask:host` (solo Linux).
 
 ## Qué mirar con `--trace`
 
@@ -238,7 +278,7 @@ docker compose down -v                            # borra también las sesiones
 
 `langgraph 1.2.22`, `langgraph-checkpoint 4.3.2`, `langgraph-checkpoint-sqlite 3.1.3`, `langchain 1.5.0`, `langchain-core 1.8.0`, `langchain-openai 1.8.0`, `langchain-anthropic 1.7.10`, `fastapi 0.163.0`, `uvicorn 0.54.0`, `streamlit 1.67.0`, `httpx 0.28.1`, `langgraph-cli 0.4.43`, `langchain-mcp-adapters 0.3.2` (grupo `mcp`), `pydantic 2.14.3`, `pytest 9.2.0`, CLI de Bruno `@usebruno/cli 4.3.0` (Node v20.10.0) (resueltas con `uv sync` en noviembre de 2026; versiones exactas en `uv.lock`). Python 3.12.
 
-**Probado:** 45 pruebas sin red (aprobación aceptada y rechazada, tope de pasos, falta de progreso, `recursion_limit`, persistencia del hilo entre ejecuciones y reinicios, aprobación pendiente que sobrevive al reinicio, memoria de largo plazo, cliente de Trello con sesión falsa, MCP con un servidor local); el servidor `langgraph dev` por su API REST; la imagen Docker (API y UI **healthy** con `docker compose up`, colección Bruno 14/14 contra el contenedor, reinicio de la API con sesión y aprobación pendiente intactas); la **API** en vivo con uvicorn (reinicio del proceso y continuación de la misma sesión, incluida una aprobación pendiente); la **colección Bruno** de punta a punta con el CLI (14 peticiones, 9 pruebas, 22 aserciones); la **interfaz Streamlit** con `AppTest` y arrancada de verdad (`/_stcore/health` responde `ok`); y el agente completo con **OpenAI `gpt-6-luna`** contra Trello simulado (crear y mover una tarjeta, con dos aprobaciones). **No se probó:** Trello real, Anthropic, LM Studio, el Studio alojado (interfaz web), la aplicación de escritorio de Bruno (solo su CLI; el formato `.bru` se validó porque el CLI lo ejecuta), la interfaz Streamlit en un navegador real (solo `AppTest` y el chequeo de salud) y el autoalojamiento de LangGraph Server.
+**Probado:** 49 pruebas sin red (aprobación aceptada y rechazada, tope de pasos, falta de progreso, `recursion_limit`, persistencia del hilo entre ejecuciones y reinicios, aprobación pendiente que sobrevive al reinicio, memoria de largo plazo, cliente de Trello con sesión falsa, MCP con un servidor local); el servidor `langgraph dev` por su API REST; la imagen Docker (API y UI **healthy** con `docker compose up`, colección Bruno 14/14 contra el contenedor, reinicio de la API con sesión y aprobación pendiente intactas); la **API** en vivo con uvicorn (reinicio del proceso y continuación de la misma sesión, incluida una aprobación pendiente); la **colección Bruno** de punta a punta con el CLI (14 peticiones, 9 pruebas, 22 aserciones); la **interfaz Streamlit** con `AppTest` y arrancada de verdad (`/_stcore/health` responde `ok`); y el agente completo con **OpenAI `gpt-6-luna`** contra Trello simulado (crear y mover una tarjeta, con dos aprobaciones). **No se probó:** Trello real, Anthropic, LM Studio, el Studio alojado (interfaz web), la aplicación de escritorio de Bruno (solo su CLI; el formato `.bru` se validó porque el CLI lo ejecuta), la interfaz Streamlit en un navegador real (solo `AppTest` y el chequeo de salud) y el autoalojamiento de LangGraph Server.
 
 ## 💰 Costo
 
