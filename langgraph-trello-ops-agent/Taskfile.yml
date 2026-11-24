@@ -1,7 +1,7 @@
 # https://taskfile.dev · `task` lista las tareas · requiere: uv (Python) y, para Docker, docker compose.
 # Lo que escribas después de `--` es el mensaje al agente:
 #   task trace -- 'Crea una tarjeta "Revisar alertas de disco"'
-# Para la clase: task check · task test · task docker:start:mcp · task docker:ps · task docker:logs -- api · task docker:mcp:tools
+# Para la clase: task check · task trello:check · task test · task docker:start:mcp · task docker:ps · task docker:logs -- api · task docker:mcp:tools
 version: "3"
 
 vars:
@@ -18,9 +18,9 @@ tasks:
       - task --list
 
   install:
-    desc: Instala las dependencias de Python (incluidas las de pruebas y langgraph dev)
+    desc: Instala las dependencias de Python (pruebas, langgraph dev y el grupo mcp de los servidores MCP de terceros)
     cmds:
-      - uv sync
+      - uv sync --group mcp
 
   ask:
     desc: 'Habla con el agente; pregunta antes de escribir (task ask -- "mensaje")'
@@ -70,6 +70,11 @@ tasks:
     desc: Muestra qué configuración leerá el proyecto (modelo, embeddings, Trello, MCP) sin imprimir llaves
     cmds:
       - uv run python check_env.py
+
+  trello:check:
+    desc: "Comprueba tu Trello contra lo que esperan las demos (tableros, listas, tarjetas) y dice qué valor poner en TRELLO_WRITE_BOARDS; solo lee"
+    cmds:
+      - uv run python check_trello.py
 
   health:
     desc: "Estado de la API (task health; otro puerto: task health API_PORT=8012)"

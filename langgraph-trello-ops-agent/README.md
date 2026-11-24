@@ -65,7 +65,8 @@ flowchart LR
 | [`bruno/`](bruno) | Colección Bruno de 14 peticiones con aserciones y pruebas | (cliente HTTP) |
 | [`main.py`](main.py) | Línea de comandos: mensaje único, `--trace`, `--chat`, `--db` | `thread_id`, `Context(user_id)` |
 | [`check_env.py`](check_env.py) | Muestra qué `.env`, modelo, embeddings, Trello y MCP se usarán, sin imprimir llaves (`task check`) | (utilidad) |
-| [`tests/`](tests) | 49 pruebas **sin red** (grafo, cliente de Trello, MCP, API con `TestClient`, interfaz con `AppTest`) | modelo guionado + `FakeTrello` |
+| [`check_trello.py`](check_trello.py) | Compara tu Trello con los tableros, listas y tarjetas que esperan las demos; solo lee (`task trello:check`) | (utilidad) |
+| [`tests/`](tests) | 52 pruebas **sin red** (grafo, cliente de Trello, MCP, API con `TestClient`, interfaz con `AppTest`) | modelo guionado + `FakeTrello` |
 
 ## Cómo correrlo
 
@@ -163,6 +164,9 @@ Studio es una interfaz alojada que se conecta a tu servidor local (puede pedir c
 
 ## Trello real (`TRELLO_MODE=live`)
 
+> **Camino recomendado:** el manual de estudio (`ayuda-docente/guiones/Modulo1/ESTUDIO_PROYECTO_S11_TRELLO_OPS_AGENT.md`, sección 3, paso 0) lleva de la mano por la cuenta, los dos tableros de prueba, la API key, el token y el `.env`. Después, **`task trello:check`** (`check_trello.py`) compara tu Trello con los datos que esperan las demos (tableros «Operaciones TI» y «Migración a la nube», sus listas y cinco tarjetas), **solo lee** y te dice qué `TRELLO_WRITE_BOARDS` poner. **`task check`** (`check_env.py`) resume la configuración sin imprimir llaves. Empieza siempre con `TRELLO_DRY_RUN=1`.
+
+
 1. **Clave:** en <https://trello.com/power-ups/admin> crea un Power-Up y, en la pestaña *API key*, genera la clave.
 2. **Token:** abre `https://trello.com/1/authorize?expiration=1day&scope=read,write&response_type=token&key=TU_CLAVE`, pulsa *Allow* y copia el token. Caduca en un día (`expiration`); usa una **cuenta y un tablero de prueba**.
 3. En `.env`: `TRELLO_MODE=live`, `TRELLO_API_KEY`, `TRELLO_TOKEN` y `TRELLO_WRITE_BOARDS=<id del tablero de prueba>`. El id aparece en `list_boards`.
@@ -212,7 +216,8 @@ Seguridad: las anotaciones `readOnlyHint` de un servidor ajeno **no se usan** pa
 
 ```bash
 task check                  # qué configuración leerá el proyecto (modelo, embeddings, Trello, MCP), sin imprimir llaves
-task test                   # 49 pruebas sin red
+task trello:check           # tu Trello real frente a lo que esperan las demos (solo lee)
+task test                   # 52 pruebas sin red
 task trace -- 'Crea una tarjeta "Revisar alertas de disco"'
 task api · task ui · task bruno · task dev
 task health                 # estado de la API (modelo, Trello, sesiones)
@@ -278,7 +283,7 @@ task docker:ask:mcp                # la CLI del contenedor con la demo de CVE
 
 `langgraph 1.2.22`, `langgraph-checkpoint 4.3.2`, `langgraph-checkpoint-sqlite 3.1.3`, `langchain 1.5.0`, `langchain-core 1.8.0`, `langchain-openai 1.8.0`, `langchain-anthropic 1.7.10`, `fastapi 0.163.0`, `uvicorn 0.54.0`, `streamlit 1.67.0`, `httpx 0.28.1`, `langgraph-cli 0.4.43`, `langchain-mcp-adapters 0.3.2` (grupo `mcp`), `pydantic 2.14.3`, `pytest 9.2.0`, CLI de Bruno `@usebruno/cli 4.3.0` (Node v20.10.0) (resueltas con `uv sync` en noviembre de 2026; versiones exactas en `uv.lock`). Python 3.12.
 
-**Probado:** 49 pruebas sin red (aprobación aceptada y rechazada, tope de pasos, falta de progreso, `recursion_limit`, persistencia del hilo entre ejecuciones y reinicios, aprobación pendiente que sobrevive al reinicio, memoria de largo plazo, cliente de Trello con sesión falsa, MCP con un servidor local); el servidor `langgraph dev` por su API REST; la imagen Docker (API y UI **healthy** con `docker compose up`, colección Bruno 14/14 contra el contenedor, reinicio de la API con sesión y aprobación pendiente intactas); la **API** en vivo con uvicorn (reinicio del proceso y continuación de la misma sesión, incluida una aprobación pendiente); la **colección Bruno** de punta a punta con el CLI (14 peticiones, 9 pruebas, 22 aserciones); la **interfaz Streamlit** con `AppTest` y arrancada de verdad (`/_stcore/health` responde `ok`); y el agente completo con **OpenAI `gpt-6-luna`** contra Trello simulado (crear y mover una tarjeta, con dos aprobaciones). **No se probó:** Trello real, Anthropic, LM Studio, el Studio alojado (interfaz web), la aplicación de escritorio de Bruno (solo su CLI; el formato `.bru` se validó porque el CLI lo ejecuta), la interfaz Streamlit en un navegador real (solo `AppTest` y el chequeo de salud) y el autoalojamiento de LangGraph Server.
+**Probado:** 52 pruebas sin red (aprobación aceptada y rechazada, tope de pasos, falta de progreso, `recursion_limit`, persistencia del hilo entre ejecuciones y reinicios, aprobación pendiente que sobrevive al reinicio, memoria de largo plazo, cliente de Trello con sesión falsa, MCP con un servidor local); el servidor `langgraph dev` por su API REST; la imagen Docker (API y UI **healthy** con `docker compose up`, colección Bruno 14/14 contra el contenedor, reinicio de la API con sesión y aprobación pendiente intactas); la **API** en vivo con uvicorn (reinicio del proceso y continuación de la misma sesión, incluida una aprobación pendiente); la **colección Bruno** de punta a punta con el CLI (14 peticiones, 9 pruebas, 22 aserciones); la **interfaz Streamlit** con `AppTest` y arrancada de verdad (`/_stcore/health` responde `ok`); y el agente completo con **OpenAI `gpt-6-luna`** contra Trello simulado (crear y mover una tarjeta, con dos aprobaciones). **No se probó:** Trello real, Anthropic, LM Studio, el Studio alojado (interfaz web), la aplicación de escritorio de Bruno (solo su CLI; el formato `.bru` se validó porque el CLI lo ejecuta), la interfaz Streamlit en un navegador real (solo `AppTest` y el chequeo de salud) y el autoalojamiento de LangGraph Server.
 
 ## 💰 Costo
 
