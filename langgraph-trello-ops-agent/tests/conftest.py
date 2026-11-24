@@ -45,6 +45,10 @@ def offline(monkeypatch):
     monkeypatch.setenv("EMBEDDINGS_PROVIDER", "fake")
     monkeypatch.setenv("TRELLO_MODE", "fake")
     monkeypatch.setenv("USE_MCP", "0")
+    # El resto de ajustes del `.env` también se neutraliza. Se fijan (no se borran): `load_dotenv` volvería a cargar los borrados.
+    for name, value in {"MCP_SERVERS_FILE": "", "MCP_READONLY_TOOLS": "", "MCP_TOOL_PREFIX": "0", "MCP_STRICT": "0",
+                        "TRELLO_DRY_RUN": "0", "TRELLO_WRITE_BOARDS": "", "MAX_STEPS": "8"}.items():
+        monkeypatch.setenv(name, value)
 
 
 @pytest.fixture

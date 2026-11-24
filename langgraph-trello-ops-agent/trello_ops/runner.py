@@ -5,13 +5,18 @@ from collections.abc import Callable
 from langgraph.types import Command
 
 from trello_ops.state import Context
+from trello_ops.tools import WRITE_TOOLS
 
 Decision = bool | dict     # True/False, o {"approved": bool, "reason": str}
 
 
 def ask_in_terminal(request: dict) -> Decision:
     """Muestra las acciones propuestas y pide la decisión: `s` aprueba; `n motivo` rechaza (con motivo opcional)."""
-    print("\n⏸️  El agente quiere ESCRIBIR en Trello y espera tu aprobación:")
+    # No todo lo que pide aprobación escribe: una herramienta MCP no declarada de solo lectura también se pausa (mínimo privilegio).
+    if all(a["tool"] in WRITE_TOOLS for a in request["actions"]):
+        print("\n⏸️  El agente quiere ESCRIBIR en Trello y espera tu aprobación:")
+    else:
+        print("\n⏸️  El agente quiere usar herramientas que requieren tu aprobación (no declaradas de solo lectura):")
     for a in request["actions"]:
         print(f"   • {a['summary']}")
     answer = input("   ¿Apruebas? [s = sí · n = no (puedes añadir el motivo)] > ").strip()

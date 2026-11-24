@@ -9,7 +9,7 @@
 #   - el JSON de conexiones se MONTA en el contenedor (no está en la imagen)
 #   - `uvx` (servidor de hora) necesita una caché escribible: el usuario sin privilegios de la imagen tiene un directorio personal escribible (/home/app)
 # Necesita internet desde el contenedor (descarga el servidor de hora y llama al servidor remoto de CVE).
-# No pongas USE_MCP=1 en el .env: haría fallar al compose normal, que no instala MCP.
+# Puedes tener USE_MCP=1 en el .env: el compose normal fija USE_MCP=0 (no instala MCP) y este archivo lo vuelve a activar.
 
 x-mcp: &mcp
   build:

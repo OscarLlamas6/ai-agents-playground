@@ -5,11 +5,13 @@
 version: "3"
 
 vars:
-  MESSAGE: '{{default "Muestra mis tableros" .CLI_ARGS}}'
+  # CLI_ARGS (lo que va tras `--`) ya llega entrecomillado por task: se usa SIN comillas alrededor, así el mensaje puede llevar "comillas"
+  MESSAGE: '{{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}{{shellQuote "Muestra mis tableros"}}{{end}}'
   API_PORT: '{{default "8011" .API_PORT}}'
   MCP_FILE: mcp_servers.example.json
   MCP_READONLY: excession_cve_search,excession_cve_get,time_get_current_time
-  MCP_MESSAGE: 'Busca vulnerabilidades de SMBv3 explotadas activamente (KEV) y comenta en "Actualizar parches del servidor de archivos" un resumen de las más graves, con la fecha y hora actual en America/Guatemala'
+  MCP_DEFAULT: 'Busca vulnerabilidades de SMBv3 explotadas activamente (KEV) y comenta en "Actualizar parches del servidor de archivos" un resumen de las más graves, con la fecha y hora actual en America/Guatemala'
+  MCP_MESSAGE: '{{if .CLI_ARGS}}{{.CLI_ARGS}}{{else}}{{shellQuote .MCP_DEFAULT}}{{end}}'
 
 tasks:
   default:
@@ -26,13 +28,13 @@ tasks:
     desc: 'Habla con el agente; pregunta antes de escribir (task ask -- "mensaje")'
     interactive: true
     cmds:
-      - uv run python main.py "{{.MESSAGE}}"
+      - uv run python main.py {{.MESSAGE}}
 
   trace:
     desc: 'Como ask, mostrando nodos y herramientas del recorrido (task trace -- "mensaje")'
     interactive: true
     cmds:
-      - uv run python main.py --trace "{{.MESSAGE}}"
+      - uv run python main.py --trace {{.MESSAGE}}
 
   chat:
     desc: Conversación con memoria; guarda todo en .data/ops.sqlite (sobrevive al reinicio)
@@ -106,7 +108,7 @@ tasks:
       MCP_TOOL_PREFIX: "1"
       MCP_READONLY_TOOLS: "{{.MCP_READONLY}}"
     cmds:
-      - uv run --group mcp python main.py --trace "{{default .MCP_MESSAGE .CLI_ARGS}}"
+      - uv run --group mcp python main.py --trace {{.MCP_MESSAGE}}
 
   docker:up:
     desc: Levanta la API (:8011) y la interfaz (:8511) con healthchecks
@@ -174,7 +176,7 @@ tasks:
     desc: 'La CLI en un contenedor con MCP de terceros; sin mensaje usa la demo de la clase (task docker:ask:mcp -- "mensaje")'
     interactive: true
     cmds:
-      - docker compose -f docker-compose.yml -f docker-compose.mcp.yml run --rm agent --trace "{{default .MCP_MESSAGE .CLI_ARGS}}"
+      - docker compose -f docker-compose.yml -f docker-compose.mcp.yml run --rm agent --trace {{.MCP_MESSAGE}}
 
   docker:build:
     desc: Construye la imagen
@@ -185,7 +187,7 @@ tasks:
     desc: 'El agente en un contenedor (task docker:ask -- "mensaje")'
     interactive: true
     cmds:
-      - docker compose run --rm agent --trace "{{.MESSAGE}}"
+      - docker compose run --rm agent --trace {{.MESSAGE}}
 
   docker:chat:
     desc: Conversación con memoria persistente, en un contenedor
@@ -197,4 +199,4 @@ tasks:
     desc: "Como docker:ask, pero en la red del anfitrión (solo Linux): alcanza LM Studio en localhost"
     interactive: true
     cmds:
-      - docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent --trace "{{.MESSAGE}}"
+      - docker compose -f docker-compose.yml -f docker-compose.host.yml run --rm agent --trace {{.MESSAGE}}

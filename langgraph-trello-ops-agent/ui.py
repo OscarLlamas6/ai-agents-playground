@@ -61,7 +61,10 @@ for role, text, *detail in st.session_state.history:
 
 if st.session_state.pending:                          # el grafo está en pausa: una persona decide
     with st.chat_message("assistant"):
-        st.warning("El agente quiere escribir en Trello y espera tu aprobación:")
+        # No todo lo que pide aprobación escribe en Trello: también las herramientas MCP no declaradas de solo lectura.
+        writes_only = all(a["tool"] in {"create_card", "move_card", "add_comment"} for a in st.session_state.pending)
+        st.warning("El agente quiere escribir en Trello y espera tu aprobación:" if writes_only
+                   else "El agente quiere usar herramientas que requieren tu aprobación (no declaradas de solo lectura):")
         for action in st.session_state.pending:
             st.write(f"• {action['summary']}")
         col_yes, col_no = st.columns(2)
